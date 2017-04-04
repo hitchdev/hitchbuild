@@ -102,7 +102,16 @@ class Engine(BaseEngine):
     def assert_exception(self, command, exception):
         self.ipython_step_library.assert_exception(command, exception)
 
-    def _will_be(self, content, reference, changeable=None):
+    def _will_be(self, content, text, reference, changeable=None):
+        if text is not None:
+            if content == text:
+                return
+            else:
+                raise RuntimeError("Expected to find:\n{0}\n\nActual output:\n{1}".format(
+                    text,
+                    content,
+                ))
+
         artefact = self.path.engine.joinpath(
             "artefacts", "{0}.txt".format(reference.replace(" ", "-").lower())
         )
@@ -134,13 +143,13 @@ class Engine(BaseEngine):
                 else:
                     self.services.log(content)
 
-    def file_contents_will_be(self, filename, reference, changeable=None):
+    def file_contents_will_be(self, filename, text=None, reference=None, changeable=None):
         output_contents = self.path.state.joinpath(filename).bytes().decode('utf8')
-        self._will_be(output_contents, reference, changeable)
+        self._will_be(output_contents, text, reference, changeable)
 
-    def output_will_be(self, reference, changeable=None):
+    def output_will_be(self, text=None, reference=None, changeable=None):
         output_contents = self.path.state.joinpath("output.txt").bytes().decode('utf8')
-        self._will_be(output_contents, reference, changeable)
+        self._will_be(output_contents, text, reference, changeable)
 
     def shell(self):
         if hasattr(self, 'services'):

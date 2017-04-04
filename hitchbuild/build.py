@@ -2,11 +2,17 @@ import copy
 
 
 class HitchBuild(object):
-    def __init__(self):
-        self._requirements = {}
+    _built_if_exists = False
+    _requirements = {}
+
+    def exists(self):
+        raise NotImplemented()
 
     def ensure_built(self, path):
         self.path = path
+        if self._built_if_exists:
+            if self.exists():
+                return
         for name, requirement in self._requirements.items():
             requirement.ensure_built(path)
         self.build()
