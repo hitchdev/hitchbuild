@@ -18,10 +18,10 @@ Skip if already built:
         from build import BuildThing
         from hitchbuild import BuildPath
 
-        thing = BuildThing()
+        thing = BuildThing().in_path(BuildPath(build="."))
 
-        thing.ensure_built(BuildPath(build="."))
-        thing.ensure_built(BuildPath(build="."))
+        thing.ensure_built()
+        thing.ensure_built()
 
     - File contents will be:
         filename: thing.txt
