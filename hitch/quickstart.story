@@ -16,7 +16,7 @@ HitchBuild Quickstart:
         from hitchbuild import BuildPath
 
         build = BuildThing()
-        build.ensure_built(BuildPath(build="."))
+        build.in_path(BuildPath(build=".")).ensure_built()
 
     - File contents will be:
         filename: thing.txt
