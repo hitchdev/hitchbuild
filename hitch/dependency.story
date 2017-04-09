@@ -19,8 +19,9 @@ Dependency:
         from build import BuildThing, DependentThing
         from hitchbuild import BuildPath
 
-        thing = BuildThing().requirement(dependent_thing=DependentThing())
-        thing.ensure_built(BuildPath(build="."))
+        BuildThing().requirement(dependent_thing=DependentThing())\
+                    .in_path(BuildPath(build="."))\
+                    .ensure_built()
 
     - File contents will be:
         filename: thing.txt

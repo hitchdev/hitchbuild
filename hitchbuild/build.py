@@ -26,7 +26,7 @@ class HitchBuild(object):
             if self.exists():
                 return
         for name, requirement in self._requirements.items():
-            requirement.ensure_built()
+            requirement.in_path(self.path).ensure_built()
         self.build()
 
     def requirement(self, **requirements):
