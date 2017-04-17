@@ -1,8 +1,8 @@
-from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions
+from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
 from hitchrun import Path, hitch_maintenance, expected
 from commandlib import Command
 from pathquery import pathq
-from strictyaml import MapPattern, Str
+from strictyaml import MapPattern, Str, Int
 from commandlib import python
 import hitchpython
 import hitchserve
@@ -102,9 +102,12 @@ class Engine(BaseEngine):
     def assert_exception(self, command, exception):
         self.ipython_step_library.assert_exception(command, exception)
 
+    def touch_file(self, filename):
+        self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)
+
     def _will_be(self, content, text, reference, changeable=None):
         if text is not None:
-            if content == text:
+            if content.strip() == text.strip():
                 return
             else:
                 raise RuntimeError("Expected to find:\n{0}\n\nActual output:\n{1}".format(
@@ -150,6 +153,11 @@ class Engine(BaseEngine):
     def output_will_be(self, text=None, reference=None, changeable=None):
         output_contents = self.path.state.joinpath("output.txt").bytes().decode('utf8')
         self._will_be(output_contents, text, reference, changeable)
+
+    @validate(seconds=Int())
+    def sleep(self, seconds):
+        import time
+        time.sleep(int(seconds))
 
     def shell(self):
         if hasattr(self, 'services'):

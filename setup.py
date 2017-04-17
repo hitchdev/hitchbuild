@@ -36,7 +36,7 @@ setup(name="hitchbuild",
     url='https://hitchbuild.readthedocs.org/',
     license='AGPL',
     install_requires=[
-        'path.py',
+        'path.py', 'peewee'
     ],
     packages=find_packages(exclude=["docs", ]),
     package_data={},
