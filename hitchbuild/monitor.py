@@ -1,6 +1,7 @@
 from peewee import ForeignKeyField, CharField, FloatField, BooleanField, DateTimeField, TextField
 from peewee import SqliteDatabase, Model
 from datetime import timedelta as python_timedelta
+from datetime import datetime as python_datetime
 from hitchbuild import condition
 import pickle
 
@@ -15,6 +16,7 @@ class BuildContextManager(object):
     def __exit__(self, type, value, traceback):
         model = self._monitor.build_model
         model.exception_raised = traceback is not None
+        model.last_run = python_datetime.now()
         model.save()
 
 
@@ -73,6 +75,26 @@ class Monitor(object):
 
     def non_existent(self, path_to_check):
         return condition.NonExistent(path_to_check)
+
+    def not_run_since(self, seconds=0, minutes=0, hours=0, days=0, timedelta=None):
+        """
+        Returns condition that triggers when a period of time has elapsed since
+        last run.
+
+        All parameters are added together.
+        - seconds, minutes, hours days are integers
+        - timedelta should be a python timedelta object
+        """
+        td = python_timedelta()
+        if timedelta is not None:
+            assert isinstance(timedelta, python_timedelta), "must be python timedelta"
+            td = td + timedelta
+        td = td + python_timedelta(seconds=seconds)
+        td = td + python_timedelta(minutes=minutes)
+        td = td + python_timedelta(hours=hours)
+        td = td + python_timedelta(days=days)
+        return condition.NotRunSince(self, td)
+
 
     def context_manager(self):
         return BuildContextManager(self)

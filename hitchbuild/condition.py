@@ -1,5 +1,6 @@
 from os import path as ospath
 from path import Path
+import datetime
 
 
 class Change(object):
@@ -8,6 +9,9 @@ class Change(object):
 
 
 class YesChange(Change):
+    def __init__(self, why):
+        self.why = why
+
     def __bool__(self):
         return True
 
@@ -69,10 +73,45 @@ class Never(Condition):
 
 class NonExistent(Condition):
     def __init__(self, path_to_check):
+        super(NonExistent, self).__init__()
         self._path_to_check = Path(path_to_check)
 
     def check(self):
         return not self._path_to_check.exists()
+
+
+class TimeElapsedChange(Change):
+    def __init__(self, last_run, duration):
+        self._last_run = last_run
+        self._duration = duration
+
+    @property
+    def why(self):
+        return "Should run every time {0} elapses and {1} elapsed.".format(
+            humanize.naturaldelta(self._duration),
+            humanize.naturaldelta(datetime.datetime.now() - self._last_run),
+        )
+
+    def __bool__(self):
+        return True
+
+
+class NotRunSince(Condition):
+    def __init__(self, monitor, timedelta):
+        self._monitor = monitor
+        self._timedelta = timedelta
+        super(NotRunSince, self).__init__()
+
+    def check(self):
+        model = self._monitor.build_model
+        if model.last_run is None:
+            return YesChange("Never run.")
+
+        if model.last_run + self._timedelta < datetime.datetime.now():
+            return TimeElapsedChange(model.last_run, self._timedelta)
+        else:
+            return NoChange()
+
 
 
 class Modified(Condition):
