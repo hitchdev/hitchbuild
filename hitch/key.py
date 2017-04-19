@@ -99,7 +99,7 @@ class Engine(BaseEngine):
     def assert_true(self, command):
         self.ipython_step_library.assert_true(command)
 
-    def assert_exception(self, command, exception):
+    def exception_is_raised(self, command, exception):
         self.ipython_step_library.assert_exception(command, exception)
 
     def touch_file(self, filename):

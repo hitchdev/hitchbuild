@@ -1,4 +1,6 @@
 from os import path as ospath
+from path import Path
+
 
 class Change(object):
     def __nonzero__(self):
@@ -8,6 +10,11 @@ class Change(object):
 class YesChange(Change):
     def __bool__(self):
         return True
+
+
+class NoChange(Change):
+    def __bool__(self):
+        return False
 
 
 class FileChange(Change):
@@ -53,6 +60,19 @@ class Condition(object):
 class Always(Condition):
     def check(self):
         return YesChange()
+
+
+class Never(Condition):
+    def check(self):
+        return NoChange()
+
+
+class NonExistent(Condition):
+    def __init__(self, path_to_check):
+        self._path_to_check = Path(path_to_check)
+
+    def check(self):
+        return not self._path_to_check.exists()
 
 
 class Modified(Condition):

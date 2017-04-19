@@ -3,25 +3,31 @@ Skip if already built:
   preconditions:
     files:
       build.py: |
-        from hitchbuild import HitchBuild, built_if_exists
+        import hitchbuild
 
-        @built_if_exists
-        class BuildThing(HitchBuild):
-            def exists(self):
-                return self.path.build.joinpath("thing.txt").exists()
+
+        @hitchbuild.built_if_exists
+        class BuildThing(hitchbuild.HitchBuild):
+            def trigger(self):
+                return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))
 
             def build(self):
                 self.path.build.joinpath("thing.txt").write_text("oneline", append=True)
 
+        def ensure_built():
+            build_bundle = hitchbuild.BuildBundle(
+                hitchbuild.BuildPath(build="."),
+                "db.sqlite"
+            )
+
+            build_bundle['thing'] = BuildThing()
+            build_bundle.ensure_built()
   scenario:
     - Run: |
-        from build import BuildThing
-        from hitchbuild import BuildPath
+        from build import ensure_built
 
-        thing = BuildThing().in_path(BuildPath(build="."))
-
-        thing.ensure_built()
-        thing.ensure_built()
+        ensure_built()
+        ensure_built()
 
     - File contents will be:
         filename: thing.txt

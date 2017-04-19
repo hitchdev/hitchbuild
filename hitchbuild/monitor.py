@@ -5,6 +5,19 @@ from hitchbuild import condition
 import pickle
 
 
+class BuildContextManager(object):
+    def __init__(self, monitor):
+        self._monitor = monitor
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        model = self._monitor.build_model
+        model.exception_raised = traceback is not None
+        model.save()
+
+
 class Monitor(object):
     """
     The HitchBuild Monitor keeps track of things which
@@ -51,6 +64,15 @@ class Monitor(object):
             model = self.Build.filter(name=self._name).first()
         return model
 
+    @property
+    def last_run_had_exception(self):
+        return self.build_model.exception_raised
 
     def is_modified(self, path_list):
         return condition.Modified(self, path_list)
+
+    def non_existent(self, path_to_check):
+        return condition.NonExistent(path_to_check)
+
+    def context_manager(self):
+        return BuildContextManager(self)

@@ -6,7 +6,10 @@ import copy
 class HitchBuild(object):
     _built_if_exists = False
     _requirements = {}
-    #_path = None
+
+    def __init__(self):
+        self._name = None
+        self._sqlite_filename = None
 
     def exists(self):
         raise NotImplemented()
@@ -45,13 +48,12 @@ class HitchBuild(object):
         return new_build
 
     def ensure_built(self):
-        if self._built_if_exists:
-            if self.exists():
-                return
         for name, requirement in self._requirements.items():
             requirement.in_path(self.path).ensure_built()
-        if self.trigger().check():
-            self.build()
+        if self.trigger().check() or \
+            self.monitor.last_run_had_exception:
+            with self.monitor.context_manager():
+                self.build()
 
     def requirement(self, **requirements):
         new_build = copy.copy(self)
