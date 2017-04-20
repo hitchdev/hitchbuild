@@ -11,11 +11,7 @@ Exception occurred:
         from code_that_does_things import *
         import hitchbuild
 
-        @hitchbuild.built_if_exists
         class BuildThing(hitchbuild.HitchBuild):
-            def exists(self):
-                return self.path.build.joinpath("thing.txt").exists()
-
             def build(self):
                 self.path.build.joinpath("thing.txt").write_text("oneline\n", append=True)
 

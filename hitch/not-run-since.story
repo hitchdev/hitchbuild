@@ -5,8 +5,6 @@ Not run since:
       build.py: |
         import hitchbuild
 
-
-        @hitchbuild.built_if_exists
         class BuildThing(hitchbuild.HitchBuild):
             def trigger(self):
                 return self.monitor.not_run_since(seconds=1)

@@ -63,7 +63,7 @@ class Condition(object):
 
 class Always(Condition):
     def check(self):
-        return YesChange()
+        return YesChange("Always triggered")
 
 
 class Never(Condition):

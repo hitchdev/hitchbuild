@@ -6,7 +6,6 @@ Skip if already built:
         import hitchbuild
 
 
-        @hitchbuild.built_if_exists
         class BuildThing(hitchbuild.HitchBuild):
             def trigger(self):
                 return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))

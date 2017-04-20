@@ -49,7 +49,7 @@ class HitchBuild(object):
 
     def ensure_built(self):
         for name, requirement in self._requirements.items():
-            requirement.in_path(self.path).ensure_built()
+            requirement.ensure_built()
         if self.trigger().check() or \
             self.monitor.last_run_had_exception:
             with self.monitor.context_manager():

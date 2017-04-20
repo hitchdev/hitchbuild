@@ -3,25 +3,34 @@ Dependency:
   preconditions:
     files:
       build.py: |
-        from hitchbuild import HitchBuild, needs
+        import hitchbuild
 
-        class DependentThing(HitchBuild):
+        class DependentThing(hitchbuild.HitchBuild):
             def build(self):
                 self.path.build.joinpath("dependentthing.txt").write_text("text")
 
-        @needs(dependent_thing=DependentThing)
-        class BuildThing(HitchBuild):
+        @hitchbuild.needs(dependent_thing=DependentThing)
+        class BuildThing(hitchbuild.HitchBuild):
             def build(self):
                 self.path.build.joinpath("thing.txt").write_text("text")
 
+        def ensure_built():
+            build_bundle = hitchbuild.BuildBundle(
+                hitchbuild.BuildPath(build="."),
+                "db.sqlite"
+            )
+
+            build_bundle['dependent thing'] = DependentThing()
+            build_bundle['thing'] = BuildThing().requirement(
+                dependent_thing=build_bundle['dependent thing']
+            )
+            build_bundle.ensure_built()
+
   scenario:
     - Run: |
-        from build import BuildThing, DependentThing
-        from hitchbuild import BuildPath
+        from build import ensure_built
 
-        BuildThing().requirement(dependent_thing=DependentThing())\
-                    .in_path(BuildPath(build="."))\
-                    .ensure_built()
+        ensure_built()
 
     - File contents will be:
         filename: thing.txt

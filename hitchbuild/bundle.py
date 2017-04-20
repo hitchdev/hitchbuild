@@ -14,6 +14,9 @@ class BuildBundle(object):
                                   .with_db(self._sqlite_filename)\
                                   .in_path(self._build_path)
 
+    def __getitem__(self, name):
+        return self._builds[name]
+
     def ensure_built(self):
         for _, build in self._builds.items():
             build.ensure_built()
