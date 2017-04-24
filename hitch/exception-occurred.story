@@ -12,6 +12,9 @@ Exception occurred:
         import hitchbuild
 
         class BuildThing(hitchbuild.HitchBuild):
+            def trigger(self):
+                return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))
+
             def build(self):
                 self.path.build.joinpath("thing.txt").write_text("oneline\n", append=True)
 

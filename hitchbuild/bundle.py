@@ -1,4 +1,5 @@
 from hitchbuild.build import HitchBuild
+from copy import copy
 
 
 class BuildBundle(object):
@@ -18,5 +19,16 @@ class BuildBundle(object):
         return self._builds[name]
 
     def ensure_built(self):
-        for _, build in self._builds.items():
-            build.ensure_built()
+        build_triggered = True
+
+        while build_triggered:
+            build_triggered = False
+            for build in self._builds.values():
+                if build.ensure_built():
+                    build_triggered = True
+
+    def manually_trigger(self, *names):
+        new_bundle = copy(self)
+        for name in names:
+            new_bundle[name] = new_bundle[name].manually_triggered()
+        return new_bundle

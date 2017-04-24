@@ -1,6 +1,6 @@
 from hitchbuild.monitor import Monitor
 from hitchbuild.condition import Always
-import copy
+from copy import copy
 
 
 class HitchBuild(object):
@@ -9,16 +9,17 @@ class HitchBuild(object):
 
     def __init__(self):
         self._name = None
+        self._manually_triggered = False
         self._sqlite_filename = None
 
     def exists(self):
         raise NotImplemented()
 
     def build(self):
-        raise NotImplemented()
+        raise NotImplementedError("build method must be implemented")
 
     def trigger(self):
-        return Always()
+        raise NotImplementedError("trigger method must be implemented")
 
     @property
     def monitor(self):
@@ -33,29 +34,61 @@ class HitchBuild(object):
         return self._name
 
     def in_path(self, path):
-        new_build = copy.copy(self)
+        new_build = copy(self)
         new_build._path = path
         return new_build
 
     def with_db(self, sqlite_filename):
-        new_build = copy.copy(self)
+        new_build = copy(self)
         new_build._sqlite_filename = sqlite_filename
         return new_build
 
     def with_name(self, name):
-        new_build = copy.copy(self)
+        new_build = copy(self)
         new_build._name = name
         return new_build
 
+    def manually_triggered(self):
+        new_build = copy(self)
+        new_build._manually_triggered = True
+        return new_build
+
+    def requirement(self, **requirements):
+        new_build = copy(self)
+        new_build._requirements = requirements
+        return new_build
+
     def ensure_built(self):
-        for name, requirement in self._requirements.items():
-            requirement.ensure_built()
-        if self.trigger().check() or \
-            self.monitor.last_run_had_exception:
+        requirement_triggered = False
+
+        for requirement in self._requirements.values():
+            if requirement.monitor.build_model.was_triggered_on_last_run:
+                requirement_triggered = True
+
+        for requirement in self._requirements.values():
+            if requirement.ensure_built():
+                requirement_triggered = True
+
+        trigger_check = self.trigger().check()
+
+        triggered = (
+            trigger_check or
+            self.monitor.last_run_had_exception or
+            self._manually_triggered or
+            requirement_triggered
+        )
+
+        self._manually_triggered = False
+
+        if triggered:
             with self.monitor.context_manager():
                 self.build()
 
-    def requirement(self, **requirements):
-        new_build = copy.copy(self)
-        new_build._requirements = requirements
-        return new_build
+        model = self.monitor.build_model
+        model.was_triggered_on_last_run = triggered
+        model.save()
+
+        return triggered
+
+    def __repr__(self):
+        return """HitchBuild("{0}")""".format(self._name)

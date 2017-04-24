@@ -6,32 +6,64 @@ Dependency:
         import hitchbuild
 
         class DependentThing(hitchbuild.HitchBuild):
+            def trigger(self):
+                return self.monitor.non_existent(self.path.build.joinpath("dependentthing.txt"))
+
             def build(self):
-                self.path.build.joinpath("dependentthing.txt").write_text("text")
+                self.path.build.joinpath("dependentthing.txt").write_text("text\n", append=True)
 
         @hitchbuild.needs(dependent_thing=DependentThing)
         class BuildThing(hitchbuild.HitchBuild):
-            def build(self):
-                self.path.build.joinpath("thing.txt").write_text("text")
+            def __init__(self, dependent_thing):
+                super(BuildThing, self).__init__()
+                self._requirements = {"dependent_thing": dependent_thing}
 
-        def ensure_built():
-            build_bundle = hitchbuild.BuildBundle(
+            def trigger(self):
+                return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))
+
+            def build(self):
+                self.path.build.joinpath("thing.txt").write_text("text\n", append=True)
+
+        def build_bundle():
+            bundle = hitchbuild.BuildBundle(
                 hitchbuild.BuildPath(build="."),
                 "db.sqlite"
             )
 
-            build_bundle['dependent thing'] = DependentThing()
-            build_bundle['thing'] = BuildThing().requirement(
-                dependent_thing=build_bundle['dependent thing']
-            )
-            build_bundle.ensure_built()
+            bundle['dependent thing'] = DependentThing()
+            bundle['thing'] = BuildThing(bundle['dependent thing'])
+            return bundle
 
   scenario:
     - Run: |
-        from build import ensure_built
+        from build import build_bundle
 
-        ensure_built()
+        bundle = build_bundle()
+        bundle.ensure_built()
+        bundle.ensure_built()
 
     - File contents will be:
         filename: thing.txt
-        reference: text
+        text: |
+          text
+
+    - File contents will be:
+        filename: dependentthing.txt
+        text: |
+          text
+
+    - Run: |
+        bundle.manually_trigger("dependent thing").ensure_built()
+
+    - File contents will be:
+        filename: dependentthing.txt
+        text: |
+          text
+          text
+
+    - File contents will be:
+        filename: thing.txt
+        text: |
+          text
+          text
+
