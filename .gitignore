@@ -1,3 +1,5 @@
 state
-hitch/hitchdir
+hitch/gen
 __pycache__
+dist
+hitchbuild.egg-info/
