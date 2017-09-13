@@ -10,31 +10,30 @@ Quickstart:
     "thing.txt" in the build directory contain the text
     "text".
   preconditions:
-    files:
-      build.py: |
-        import hitchbuild
+    build.py: |
+      import hitchbuild
 
-        class BuildThing(hitchbuild.HitchBuild):
-            def trigger(self):
-                return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))
-        
-            def build(self):
-                self.path.build.joinpath("thing.txt").write_text("text")
+      class BuildThing(hitchbuild.HitchBuild):
+          def trigger(self):
+              return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))
+      
+          def build(self):
+              self.path.build.joinpath("thing.txt").write_text("text")
 
-        def build_bundle():
-            bundle = hitchbuild.BuildBundle(
-                hitchbuild.BuildPath(build="."),
-                "db.sqlite"
-            )
+      def build_bundle():
+          bundle = hitchbuild.BuildBundle(
+              hitchbuild.BuildPath(build="."),
+              "db.sqlite"
+          )
 
-            bundle['thing'] = BuildThing()
-            return bundle
+          bundle['thing'] = BuildThing()
+          return bundle
+    setup: |
+      from build import build_bundle
   scenario:
-    - Run: |
-        from build import build_bundle
+  - Run code: |
+      build_bundle().ensure_built()
 
-        build_bundle().ensure_built()
-
-    - File contents will be:
-        filename: thing.txt
-        reference: text
+  - File contents will be:
+      filename: thing.txt
+      reference: text
