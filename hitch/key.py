@@ -1,9 +1,10 @@
 from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
-from hitchrun import Path, hitch_maintenance, expected
+from hitchrun import hitch_maintenance, expected
 from commandlib import Command
 from pathquery import pathq
 from strictyaml import MapPattern, Str, Int
 from commandlib import python
+from path import Path
 import hitchpython
 import hitchserve
 import strictyaml
