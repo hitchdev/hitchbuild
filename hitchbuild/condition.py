@@ -85,12 +85,14 @@ class TimeElapsedChange(Change):
         self._last_run = last_run
         self._duration = duration
 
+    """
     @property
     def why(self):
         return "Should run every time {0} elapses and {1} elapsed.".format(
             humanize.naturaldelta(self._duration),
             humanize.naturaldelta(datetime.datetime.now() - self._last_run),
         )
+    """
 
     def __bool__(self):
         return True
@@ -111,7 +113,6 @@ class NotRunSince(Condition):
             return TimeElapsedChange(model.last_run, self._timedelta)
         else:
             return NoChange()
-
 
 
 class Modified(Condition):

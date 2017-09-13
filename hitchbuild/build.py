@@ -1,5 +1,4 @@
 from hitchbuild.monitor import Monitor
-from hitchbuild.condition import Always
 from copy import copy
 
 

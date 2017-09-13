@@ -1,9 +1,8 @@
-from peewee import ForeignKeyField, CharField, FloatField, BooleanField, DateTimeField, TextField
+from peewee import ForeignKeyField, CharField, FloatField, BooleanField, DateTimeField
 from peewee import SqliteDatabase, Model
 from datetime import timedelta as python_timedelta
 from datetime import datetime as python_datetime
 from hitchbuild import condition
-import pickle
 
 
 class BuildContextManager(object):
@@ -94,7 +93,6 @@ class Monitor(object):
         td = td + python_timedelta(hours=hours)
         td = td + python_timedelta(days=days)
         return condition.NotRunSince(self, td)
-
 
     def context_manager(self):
         return BuildContextManager(self)
