@@ -26,7 +26,6 @@ Dependency:
       def build_bundle():
           bundle = hitchbuild.BuildBundle(
               hitchbuild.BuildPath(build="."),
-              "db.sqlite"
           )
 
           bundle['dependent thing'] = DependentThing()

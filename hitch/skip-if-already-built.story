@@ -15,7 +15,6 @@ Skip if already built:
       def build_bundle():
           bundle = hitchbuild.BuildBundle(
               hitchbuild.BuildPath(build="."),
-              "db.sqlite"
           )
 
           bundle['thing'] = BuildThing()

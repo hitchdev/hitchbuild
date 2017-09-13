@@ -20,7 +20,6 @@ File changed:
       def ensure_built():
           build_bundle = hitchbuild.BuildBundle(
               hitchbuild.BuildPath(build="."),
-              "db.sqlite"
           )
 
           build_bundle['thing'] = BuildThing()

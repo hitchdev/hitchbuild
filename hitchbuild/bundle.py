@@ -3,9 +3,9 @@ from copy import copy
 
 
 class BuildBundle(object):
-    def __init__(self, build_path, sqlite_filename):
+    def __init__(self, build_path):
         self._build_path = build_path
-        self._sqlite_filename = sqlite_filename
+        self._sqlite_filename = build_path.build.joinpath("builddb.sqlite")
         self._builds = {}
 
     def __setitem__(self, name, build):
