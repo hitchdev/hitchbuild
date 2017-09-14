@@ -5,3 +5,4 @@ hitchpython
 flake8
 jupyter_console
 simex
+twine
