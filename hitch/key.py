@@ -11,7 +11,7 @@ from hitchrunpy import ExamplePythonCode
 
 class Engine(BaseEngine):
     schema = StorySchema(
-        preconditions={
+        given={
             "files": MapPattern(Str(), Str()),
             "variables": MapPattern(Str(), Str()),
             "python version": Str(),
@@ -56,8 +56,12 @@ class Engine(BaseEngine):
             if changed:
                 self.pip("install", "-r", "debugrequirements.txt").in_dir(self.path.key).run()
 
-        self.pip("uninstall", "hitchbuild", "-y").ignore_errors().run()
-        self.pip("install", ".").in_dir(self.path.project).run()
+        with hitchtest.monitor(
+            pathq(self.path.project.joinpath("hitchbuild")).ext("py")
+        ) as changed:
+            if changed:
+                self.pip("uninstall", "hitchbuild", "-y").ignore_errors().run()
+                self.pip("install", ".").in_dir(self.path.project).run()
 
     def run_code(self, code):
         ExamplePythonCode(code).with_setup_code(self.preconditions.get('setup', ''))\
