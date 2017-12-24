@@ -1,7 +1,7 @@
 from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
 from hitchrun import hitch_maintenance, expected, DIR
 from pathquery import pathq
-from strictyaml import MapPattern, Str, Int
+from strictyaml import Optional, MapPattern, Str, Int
 from commandlib import python, Command
 import hitchpython
 import strictyaml
@@ -12,12 +12,12 @@ from hitchrunpy import ExamplePythonCode
 class Engine(BaseEngine):
     schema = StorySchema(
         given={
-            "files": MapPattern(Str(), Str()),
-            "variables": MapPattern(Str(), Str()),
-            "python version": Str(),
-            "build.py": Str(),
-            "sourcefile.txt": Str(),
-            "setup": Str(),
+            Optional("files"): MapPattern(Str(), Str()),
+            Optional("variables"): MapPattern(Str(), Str()),
+            Optional("python version"): Str(),
+            Optional("build.py"): Str(),
+            Optional("sourcefile.txt"): Str(),
+            Optional("setup"): Str(),
         },
         params={
             "python version": Str(),
@@ -36,16 +36,16 @@ class Engine(BaseEngine):
         self.path.state.mkdir()
 
         for filename in ["build.py", "sourcefile.txt", ]:
-            if filename in self.preconditions:
+            if filename in self.given:
                 filepath = self.path.state.joinpath(filename)
                 if not filepath.dirname().exists():
                     filepath.dirname().mkdir()
-                filepath.write_text(str(self.preconditions[filename]))
+                filepath.write_text(str(self.given[filename]))
 
         self.path.key.joinpath("code_that_does_things.py").copy(self.path.state)
 
         self.python_package = hitchpython.PythonPackage(
-            self.preconditions.get('python_version', self.preconditions['python version'])
+            self.given.get('python_version', self.given['python version'])
         )
         self.python_package.build()
 
@@ -64,11 +64,11 @@ class Engine(BaseEngine):
                 self.pip("install", ".").in_dir(self.path.project).run()
 
     def run_code(self, code):
-        ExamplePythonCode(code).with_setup_code(self.preconditions.get('setup', ''))\
+        ExamplePythonCode(code).with_setup_code(self.given.get('setup', ''))\
                                .run(self.path.state, self.python)
 
     def exception_raised_with(self, code, exception_type, message):
-        result = ExamplePythonCode(code).with_setup_code(self.preconditions.get('setup', ''))\
+        result = ExamplePythonCode(code).with_setup_code(self.given.get('setup', ''))\
                                         .expect_exceptions()\
                                         .run(self.path.state, self.python)
         result.exception_was_raised(exception_type, message)
@@ -110,15 +110,12 @@ class Engine(BaseEngine):
         else:
             if self.settings.get('overwrite artefacts'):
                 artefact.write_text(simex_contents)
-                print(content)
             else:
                 if simex.compile(artefact.bytes().decode('utf8')).match(content) is None:
                     raise RuntimeError("Expected to find:\n{0}\n\nActual output:\n{1}".format(
                         artefact.bytes().decode('utf8'),
                         content,
                     ))
-                else:
-                    print(content)
 
     def file_contents_will_be(self, filename, text=None, reference=None, changeable=None):
         output_contents = self.path.state.joinpath(filename).bytes().decode('utf8')
@@ -140,11 +137,9 @@ def tdd(*words):
     """
     Run test with words.
     """
-    print(
-        StoryCollection(
-            pathq(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": True})
-        ).shortcut(*words).play().report()
-    )
+    StoryCollection(
+        pathq(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": False})
+    ).shortcut(*words).play()
 
 
 def regression():
@@ -152,11 +147,9 @@ def regression():
     Run all stories.
     """
     lint()
-    print(
-        StoryCollection(
-            pathq(DIR.key).ext("story"), Engine(DIR, {})
-        ).ordered_by_name().play().report()
-    )
+    StoryCollection(
+        pathq(DIR.key).ext("story"), Engine(DIR, {})
+    ).ordered_by_name().play()
 
 
 def hitch(*args):

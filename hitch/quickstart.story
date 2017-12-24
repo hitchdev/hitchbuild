@@ -9,29 +9,23 @@ Quickstart:
     which, in this case, will simply make the text file
     "thing.txt" in the build directory contain the text
     "text".
-  preconditions:
-    build.py: |
+  given:
+    setup: |
       import hitchbuild
 
-      class BuildThing(hitchbuild.HitchBuild):
-          def trigger(self):
-              return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))
+      class Thing(hitchbuild.HitchBuild):
+          def __init__(self):
+              pass
+
+          @property
+          def thingpath(self):
+              return self.build_path/"thing.txt"
       
           def build(self):
-              self.path.build.joinpath("thing.txt").write_text("text")
-
-      def build_bundle():
-          bundle = hitchbuild.BuildBundle(
-              hitchbuild.BuildPath(build="."),
-          )
-
-          bundle['thing'] = BuildThing()
-          return bundle
-    setup: |
-      from build import build_bundle
-  scenario:
+              self.thingpath.write_text("text")
+  steps:
   - Run code: |
-      build_bundle().ensure_built()
+      Thing().with_build_path(".").ensure_built()
 
   - File contents will be:
       filename: thing.txt

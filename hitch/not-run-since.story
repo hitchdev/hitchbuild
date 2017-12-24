@@ -1,6 +1,6 @@
 Not run since:
   based on: HitchBuild
-  preconditions:
+  given:
     build.py: |
       import hitchbuild
 
@@ -20,7 +20,7 @@ Not run since:
           build_bundle.ensure_built()
     setup: |
       from build import ensure_built
-  scenario:
+  steps:
     - Run code: |
         ensure_built()
         ensure_built()

@@ -1,4 +1,4 @@
-hitchstory
+hitchstory>=0.8.0
 hitchrun
 hitchrunpy
 hitchpython

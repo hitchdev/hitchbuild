@@ -3,7 +3,7 @@ Exception occurred:
   description: |
     If an exception occurs during a build, it is presumed that
     it needs to be run again, no matter what.
-  preconditions:
+  given:
     sourcefile.txt: |
       file that, if changed, should trigger a rebuild
     build.py: |
@@ -28,7 +28,7 @@ Exception occurred:
           build_bundle.ensure_built()
     setup: |
       from build import ensure_built
-  scenario:
+  steps:
   - Exception raised with:
       code: ensure_built()
       exception type: code_that_does_things.ExampleException

@@ -4,7 +4,7 @@ File changed:
     For many builds (e.g. database, virtualenv), you will want
     to leave it be if it exists unless one or more files has
     changed since the build was last run.
-  preconditions:
+  given:
     sourcefile.txt: |
       file that, if changed, should trigger a rebuild
     build.py: |
@@ -26,7 +26,7 @@ File changed:
           build_bundle.ensure_built()
     setup: |
       from build import ensure_built
-  scenario:
+  steps:
     - Run code: |
         ensure_built()
         ensure_built()

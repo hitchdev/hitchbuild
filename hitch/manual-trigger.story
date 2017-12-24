@@ -4,7 +4,7 @@ Manually trigger:
     While most automatic triggers may be sufficient to
     trigger a rebuild whenever it is necessary most of
     the time, a manual trigger will sometimes be necessary.
-  scenario:
+  steps:
     - Run code: |
         build_bundle().ensure_built()
 

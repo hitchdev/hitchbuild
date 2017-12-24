@@ -1,5 +1,5 @@
 HitchBuild:
-  preconditions:
+  given:
     python version: (( python version ))
-  params:
+  with:
     python version: 3.5.0

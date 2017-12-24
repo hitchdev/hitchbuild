@@ -29,7 +29,7 @@ class Monitor(object):
 
         class BaseModel(Model):
             class Meta:
-                database = SqliteDatabase(sqlite_filename)
+                database = SqliteDatabase(str(sqlite_filename))
 
         class Build(BaseModel):
             name = CharField(primary_key=True)

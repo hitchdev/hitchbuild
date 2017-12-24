@@ -1,6 +1,6 @@
 Skip if already built:
   based on: HitchBuild
-  preconditions:
+  given:
     build.py: |
       import hitchbuild
 
@@ -21,7 +21,7 @@ Skip if already built:
           return bundle
     setup: |
       from build import build_bundle
-  scenario:
+  steps:
     - Run code: |
         build_bundle().ensure_built()
         build_bundle().ensure_built()

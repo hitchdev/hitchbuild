@@ -1,6 +1,6 @@
 Dependency:
   based on: HitchBuild
-  preconditions:
+  given:
     build.py: |
       import hitchbuild
 
@@ -35,7 +35,7 @@ Dependency:
       from build import build_bundle
 
       bundle = build_bundle()
-  scenario:
+  steps:
     - Run code: |
         bundle.ensure_built()
         bundle.ensure_built()
