@@ -58,7 +58,7 @@ class HitchBuild(object):
         new_build._name = name
         return new_build
 
-    def manually_triggered(self):
+    def triggered(self):
         new_build = copy(self)
         new_build._manually_triggered = True
         return new_build

@@ -6,14 +6,14 @@ Manually trigger:
     the time, a manual trigger will sometimes be necessary.
   steps:
     - Run code: |
-        build_bundle().ensure_built()
+        build.ensure_built()
 
     - File contents will be:
         filename: thing.txt
         text: oneline
 
     - Run code: |
-        build_bundle().manually_trigger("thing").ensure_built()
+        build.triggered().ensure_built()
 
     - File contents will be:
         filename: thing.txt

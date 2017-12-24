@@ -18,10 +18,12 @@ Skip if already built:
       
           def build(self):
               self.thingpath.write_text("oneline\n", append=True)
+      
+      build = Thing().with_build_path(".")
   steps:
     - Run code: |
-        Thing().with_build_path(".").ensure_built()
-        Thing().with_build_path(".").ensure_built()
+        build.ensure_built()
+        build.ensure_built()
 
     - File contents will be:
         filename: thing.txt
