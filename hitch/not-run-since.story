@@ -1,29 +1,28 @@
 Not run since:
   based on: HitchBuild
   given:
-    build.py: |
+    setup: |
       import hitchbuild
 
-      class BuildThing(hitchbuild.HitchBuild):
+      class Thing(hitchbuild.HitchBuild):
+          def __init__(self):
+              pass
+
           def trigger(self):
               return self.monitor.not_run_since(seconds=1)
 
+          @property
+          def thingpath(self):
+              return self.build_path/"thing.txt"
+      
           def build(self):
-              self.path.build.joinpath("thing.txt").write_text("oneline\n", append=True)
-
-      def ensure_built():
-          build_bundle = hitchbuild.BuildBundle(
-              hitchbuild.BuildPath(build="."),
-          )
-
-          build_bundle['thing'] = BuildThing()
-          build_bundle.ensure_built()
-    setup: |
-      from build import ensure_built
+              self.thingpath.write_text("oneline\n", append=True)
+      
+      build = Thing().with_build_path(".")
   steps:
     - Run code: |
-        ensure_built()
-        ensure_built()
+        build.ensure_built()
+        build.ensure_built()
 
     - File contents will be:
         filename: thing.txt
@@ -33,7 +32,7 @@ Not run since:
     - Sleep: 2
 
     - Run code: |
-        ensure_built()
+        build.ensure_built()
 
     - File contents will be:
         filename: thing.txt
