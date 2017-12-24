@@ -1,4 +1,5 @@
 from hitchbuild.monitor import Monitor
+from hitchbuild.condition import Always
 from path import Path
 from copy import copy
 
@@ -14,7 +15,7 @@ class HitchBuild(object):
         raise NotImplementedError("build method must be implemented")
 
     def trigger(self):
-        raise NotImplementedError("trigger method must be implemented")
+        return Always()
 
     @property
     def monitor(self):
@@ -62,6 +63,13 @@ class HitchBuild(object):
         new_build._manually_triggered = True
         return new_build
 
+    @property
+    def was_manually_triggered(self):
+        if hasattr(self, '_manually_triggered'):
+            return self._manually_triggered
+        else:
+            return False
+
     def requirement(self, **requirements):
         new_build = copy(self)
         new_build._requirements = requirements
@@ -78,18 +86,14 @@ class HitchBuild(object):
             #if requirement.ensure_built():
                 #requirement_triggered = True
 
-        #trigger_check = self.trigger().check()
+        trigger_check = self.trigger().check()
 
-        #triggered = (
-            #trigger_check or
-            #self.monitor.last_run_had_exception or
-            #self._manually_triggered or
-            #requirement_triggered
-        #)
-
-        #self._manually_triggered = False
-        
-        triggered = True
+        triggered = (
+            trigger_check or
+            self.monitor.last_run_had_exception or
+            self.was_manually_triggered or
+            requirement_triggered
+        )
 
         if triggered:
             with self.monitor.context_manager():

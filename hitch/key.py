@@ -133,13 +133,13 @@ class Engine(BaseEngine):
 
 @expected(strictyaml.exceptions.YAMLValidationError)
 @expected(exceptions.HitchStoryException)
-def tdd(*words):
+def bdd(*keywords):
     """
-    Run test with words.
+    Run story matching keywords specified.
     """
     StoryCollection(
         pathq(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": False})
-    ).shortcut(*words).play()
+    ).shortcut(*keywords).play()
 
 
 def regression():

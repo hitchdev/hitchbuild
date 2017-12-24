@@ -1,30 +1,27 @@
 Skip if already built:
   based on: HitchBuild
   given:
-    build.py: |
+    setup: |
       import hitchbuild
 
 
-      class BuildThing(hitchbuild.HitchBuild):
+      class Thing(hitchbuild.HitchBuild):
+          def __init__(self):
+              pass
+
           def trigger(self):
-              return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))
+              return self.monitor.non_existent(self.thingpath)
 
+          @property
+          def thingpath(self):
+              return self.build_path/"thing.txt"
+      
           def build(self):
-              self.path.build.joinpath("thing.txt").write_text("oneline\n", append=True)
-
-      def build_bundle():
-          bundle = hitchbuild.BuildBundle(
-              hitchbuild.BuildPath(build="."),
-          )
-
-          bundle['thing'] = BuildThing()
-          return bundle
-    setup: |
-      from build import build_bundle
+              self.thingpath.write_text("oneline\n", append=True)
   steps:
     - Run code: |
-        build_bundle().ensure_built()
-        build_bundle().ensure_built()
+        Thing().with_build_path(".").ensure_built()
+        Thing().with_build_path(".").ensure_built()
 
     - File contents will be:
         filename: thing.txt

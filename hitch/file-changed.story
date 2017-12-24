@@ -2,48 +2,48 @@ File changed:
   based on: HitchBuild
   description: |
     For many builds (e.g. database, virtualenv), you will want
-    to leave it be if it exists unless one or more files has
+    to leave it be if it exists unless one or more source files have
     changed since the build was last run.
   given:
     sourcefile.txt: |
       file that, if changed, should trigger a rebuild
-    build.py: |
+    setup: |
+      from path import Path
       import hitchbuild
 
-      class BuildThing(hitchbuild.HitchBuild):
+      class Thing(hitchbuild.HitchBuild):
+          def __init__(self, src_dir):
+              self._src_dir = Path(src_dir)
+
           def trigger(self):
-              return self.monitor.is_modified(["sourcefile.txt"])
+              return self.monitor.is_modified([self._src_dir/"sourcefile.txt"])
+          
+          @property
+          def thingpath(self):
+              return self.build_path/"thing.txt"
 
           def build(self):
-              self.path.build.joinpath("thing.txt").write_text("oneline\n", append=True)
+              self.thingpath.write_text("build triggered\n", append=True)
 
-      def ensure_built():
-          build_bundle = hitchbuild.BuildBundle(
-              hitchbuild.BuildPath(build="."),
-          )
-
-          build_bundle['thing'] = BuildThing()
-          build_bundle.ensure_built()
-    setup: |
-      from build import ensure_built
+      build = Thing(src_dir=".").with_build_path(".")
   steps:
     - Run code: |
-        ensure_built()
-        ensure_built()
+        build.ensure_built()
+        build.ensure_built()
 
     - File contents will be:
         filename: thing.txt
-        text: oneline
+        text: build triggered
 
     - Sleep: 1
 
     - Touch file: sourcefile.txt
  
     - Run code: |
-        ensure_built()
+        build.ensure_built()
 
     - File contents will be:
         filename: thing.txt
         text: |
-          oneline
-          oneline
+          build triggered
+          build triggered
