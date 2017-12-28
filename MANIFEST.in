@@ -1,2 +1,1 @@
-recursive-include hitchdoc *.py *.jinja2
 include VERSION
