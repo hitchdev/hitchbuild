@@ -22,6 +22,9 @@ class Engine(BaseEngine):
         params={
             "python version": Str(),
         },
+        info={
+            Optional("about"): Str(),
+        },
     )
 
     def __init__(self, paths, settings):

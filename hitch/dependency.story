@@ -1,4 +1,16 @@
 Dependency:
+  about: |
+    Dependencies are builds which:
+    
+    * Must be built in order for another build to run.
+    * Must, when rebuilt, trigger that other build to rerun.
+    
+    This example shows one build that, because it depends upon
+    another, causes that build to be triggered.
+    
+    Then, the build is run again with the dependent build
+    triggered manually. That causes the main build
+    to be triggered.
   based on: HitchBuild
   given:
     setup: |
