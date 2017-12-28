@@ -42,6 +42,12 @@ class HitchBuild(object):
         new_build._build_path = Path(path)
         return new_build
 
+    def with_default_build_path(self, path):
+        if hasattr(self, '_build_path'):
+            return self
+        else:
+            return self.with_build_path(path)
+
     def with_db(self, sqlite_filename):
         new_build = copy(self)
         new_build._sqlite_filename = sqlite_filename
@@ -65,11 +71,6 @@ class HitchBuild(object):
         else:
             return False
 
-    def requirement(self, **requirements):
-        new_build = copy(self)
-        new_build._requirements = requirements
-        return new_build
-
     def as_dependency(self, build):
         dependent_build = build
         if hasattr(self, '_dependencies'):
@@ -83,7 +84,7 @@ class HitchBuild(object):
 
         if hasattr(self, '_dependencies'):
             for dependency in self._dependencies:
-                if dependency.with_build_path(self.build_path).ensure_built():
+                if dependency.with_default_build_path(self.build_path).ensure_built():
                     dependency_triggered = True
 
         trigger_check = self.trigger().check()

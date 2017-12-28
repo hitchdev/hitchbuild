@@ -13,6 +13,9 @@ Dependency:
     to be triggered.
   based on: HitchBuild
   given:
+    files:
+      special/specialbuildpath.txt: |
+        This directory is where the special builds go.
     setup: |
       import hitchbuild
 
@@ -45,45 +48,64 @@ Dependency:
 Dependency built:
   based on: dependency
   steps:
-    - Run code: |
-        build = Thing(
-            dependent_thing=DependentThing()
-        ).with_build_path(".")
+  - Run code: |
+      build = Thing(
+          dependent_thing=DependentThing()
+      ).with_build_path(".")
 
-        build.ensure_built()
-        build.ensure_built()
+      build.ensure_built()
+      build.ensure_built()
 
-    - File contents will be:
-        filename: thing.txt
-        text: |
-          text
+  - File contents will be:
+      filename: thing.txt
+      text: |
+        text
 
-    - File contents will be:
-        filename: dependentthing.txt
-        text: |
-          text
+  - File contents will be:
+      filename: dependentthing.txt
+      text: |
+        text
 
 
 When dependency is triggered rebuild children:
   based on: dependency built
   steps:
-    - Run code: |
-        build = Thing(
-            dependent_thing=DependentThing().triggered()
-        ).with_build_path(".")
+  - Run code: |
+      build = Thing(
+          dependent_thing=DependentThing().triggered()
+      ).with_build_path(".")
 
-        build.ensure_built()
+      build.ensure_built()
 
-    - File contents will be:
-        filename: thing.txt
-        text: |
-          text
-          text
+  - File contents will be:
+      filename: thing.txt
+      text: |
+        text
+        text
 
-    - File contents will be:
-        filename: dependentthing.txt
-        text: |
-          text
-          text
+  - File contents will be:
+      filename: dependentthing.txt
+      text: |
+        text
+        text
 
+When dependency has directory specified, use that one:
+  based on: dependency
+  steps:
+  - Run code: |
+      build = Thing(
+          dependent_thing=DependentThing().with_build_path("special")
+      ).with_build_path(".")
 
+      build.ensure_built()
+      build.ensure_built()
+      
+  - File contents will be:
+      filename: thing.txt
+      text: |
+        text
+        
+  - File contents will be:
+      filename: special/dependentthing.txt
+      text: |
+        text
