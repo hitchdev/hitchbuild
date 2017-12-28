@@ -53,11 +53,12 @@ class HitchBuild(object):
         new_build._sqlite_filename = sqlite_filename
         return new_build
 
+    @property
     def build_database(self):
         if hasattr(self, '_sqlite_filename'):
             return self._sqlite_filename
         else:
-            return self._path/"builddb.sqlite"
+            return self.build_path / "builddb.sqlite"
 
     def triggered(self):
         new_build = copy(self)

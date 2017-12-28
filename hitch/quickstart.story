@@ -30,3 +30,5 @@ Quickstart:
   - File contents will be:
       filename: thing.txt
       text: text
+  
+  - File exists: builddb.sqlite

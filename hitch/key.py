@@ -88,6 +88,11 @@ class Engine(BaseEngine):
     def touch_file(self, filename):
         self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)
 
+    @expected_exception(AssertionError)
+    def file_exists(self, filename):
+        assert self.path.state.joinpath(filename).exists(), \
+           "{0} does not exist".format(filename)
+
     @expected_exception(FileNotFoundError)
     @expected_exception(AssertionError)
     def file_contents_will_be(self, filename, text=None):
