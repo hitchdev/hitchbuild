@@ -33,7 +33,8 @@ File changed:
 
     - File contents will be:
         filename: thing.txt
-        text: build triggered
+        text: |
+          build triggered
 
     - Sleep: 1
 

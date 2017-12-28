@@ -1,19 +1,19 @@
-from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions, validate
+from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions
+from hitchstory import validate, expected_exception
 from hitchrun import hitch_maintenance, expected, DIR
 from pathquery import pathq
-from strictyaml import Optional, MapPattern, Str, Int
+from strictyaml import Optional, Str, Int
 from commandlib import python, Command
 import hitchpython
 import strictyaml
 import hitchtest
 from hitchrunpy import ExamplePythonCode
+from templex import Templex
 
 
 class Engine(BaseEngine):
     schema = StorySchema(
         given={
-            Optional("files"): MapPattern(Str(), Str()),
-            Optional("variables"): MapPattern(Str(), Str()),
             Optional("python version"): Str(),
             Optional("build.py"): Str(),
             Optional("sourcefile.txt"): Str(),
@@ -79,56 +79,27 @@ class Engine(BaseEngine):
     def touch_file(self, filename):
         self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)
 
-    def _will_be(self, content, text, reference, changeable=None):
-        if text is not None:
-            if content.strip() == text.strip():
-                return
+    @expected_exception(FileNotFoundError)
+    @expected_exception(AssertionError)
+    def file_contents_will_be(self, filename, text=None):
+        try:
+            Templex(self.path.state.joinpath(filename).text()).assert_match(text)
+        except AssertionError:
+            if self.settings.get("overwrite artefacts"):
+                self.current_step.update(
+                    text=self.path.state.joinpath(filename).text()
+                )
             else:
-                raise RuntimeError("Expected to find:\n{0}\n\nActual output:\n{1}".format(
-                    text,
-                    content,
-                ))
-
-        artefact = self.path.key.joinpath(
-            "artefacts", "{0}.txt".format(reference.replace(" ", "-").lower())
-        )
-
-        from simex import DefaultSimex
-        simex = DefaultSimex(
-            open_delimeter="(((",
-            close_delimeter=")))",
-        )
-
-        simex_contents = content
-
-        if changeable is not None:
-            for replacement in changeable:
-                simex_contents = simex.compile(replacement).sub(replacement, simex_contents)
-
-        if not artefact.exists():
-            artefact.write_text(simex_contents)
-        else:
-            if self.settings.get('overwrite artefacts'):
-                artefact.write_text(simex_contents)
-            else:
-                if simex.compile(artefact.bytes().decode('utf8')).match(content) is None:
-                    raise RuntimeError("Expected to find:\n{0}\n\nActual output:\n{1}".format(
-                        artefact.bytes().decode('utf8'),
-                        content,
-                    ))
-
-    def file_contents_will_be(self, filename, text=None, reference=None, changeable=None):
-        output_contents = self.path.state.joinpath(filename).bytes().decode('utf8')
-        self._will_be(output_contents, text, reference, changeable)
-
-    def output_will_be(self, text=None, reference=None, changeable=None):
-        output_contents = self.path.state.joinpath("output.txt").bytes().decode('utf8')
-        self._will_be(output_contents, text, reference, changeable)
+                raise
 
     @validate(seconds=Int())
     def sleep(self, seconds):
         import time
         time.sleep(int(seconds))
+
+    def on_success(self):
+        if self.settings.get("overwrite artefacts"):
+            self.new_story.save()
 
 
 @expected(strictyaml.exceptions.YAMLValidationError)
@@ -138,7 +109,20 @@ def bdd(*keywords):
     Run story matching keywords specified.
     """
     StoryCollection(
-        pathq(DIR.key).ext("story"), Engine(DIR, {"overwrite artefacts": False})
+        pathq(DIR.key).ext("story"),
+        Engine(DIR, {"overwrite artefacts": False})
+    ).shortcut(*keywords).play()
+
+
+@expected(strictyaml.exceptions.YAMLValidationError)
+@expected(exceptions.HitchStoryException)
+def rbdd(*keywords):
+    """
+    Run story matching keywords specified.
+    """
+    StoryCollection(
+        pathq(DIR.key).ext("story"),
+        Engine(DIR, {"overwrite artefacts": True})
     ).shortcut(*keywords).play()
 
 

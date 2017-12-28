@@ -27,4 +27,5 @@ Skip if already built:
 
     - File contents will be:
         filename: thing.txt
-        text: oneline
+        text: |
+          oneline

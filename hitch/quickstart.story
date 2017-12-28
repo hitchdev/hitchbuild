@@ -29,4 +29,4 @@ Quickstart:
 
   - File contents will be:
       filename: thing.txt
-      reference: text
+      text: text

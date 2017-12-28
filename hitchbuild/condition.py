@@ -71,6 +71,15 @@ class Never(Condition):
         return NoChange()
 
 
+class Rebuilt(Condition):
+    def __init__(self, monitor, build):
+        self._monitor = monitor
+        self._build = build
+
+    def check(self):
+        return self._monitor.model_for(self._build).was_triggered_on_last_run
+
+
 class NonExistent(Condition):
     def __init__(self, path_to_check):
         super(NonExistent, self).__init__()

@@ -1,44 +1,42 @@
 Dependency:
   based on: HitchBuild
   given:
-    build.py: |
+    setup: |
       import hitchbuild
 
       class DependentThing(hitchbuild.HitchBuild):
+          @property
+          def thingfile(self):
+              return self.build_path/"dependentthing.txt"
+
           def trigger(self):
-              return self.monitor.non_existent(self.path.build.joinpath("dependentthing.txt"))
+              return self.monitor.non_existent(self.thingfile)
 
           def build(self):
-              self.path.build.joinpath("dependentthing.txt").write_text("text\n", append=True)
+              self.thingfile.write_text("text\n", append=True)
 
-      @hitchbuild.needs(dependent_thing=DependentThing)
-      class BuildThing(hitchbuild.HitchBuild):
+
+      class Thing(hitchbuild.HitchBuild):
           def __init__(self, dependent_thing):
-              super(BuildThing, self).__init__()
-              self._requirements = {"dependent_thing": dependent_thing}
+              self.dependent_thing = self.as_dependency(dependent_thing)
+              
+          @property
+          def thingfile(self):
+              return self.build_path/"thing.txt"
 
           def trigger(self):
-              return self.monitor.non_existent(self.path.build.joinpath("thing.txt"))
+              return self.monitor.non_existent(self.thingfile)
 
           def build(self):
-              self.path.build.joinpath("thing.txt").write_text("text\n", append=True)
-
-      def build_bundle():
-          bundle = hitchbuild.BuildBundle(
-              hitchbuild.BuildPath(build="."),
-          )
-
-          bundle['dependent thing'] = DependentThing()
-          bundle['thing'] = BuildThing(bundle['dependent thing'])
-          return bundle
-    setup: |
-      from build import build_bundle
-
-      bundle = build_bundle()
+              self.thingfile.write_text("text\n", append=True)
   steps:
     - Run code: |
-        bundle.ensure_built()
-        bundle.ensure_built()
+        build = Thing(
+            dependent_thing=DependentThing()
+        ).with_build_path(".")
+
+        build.ensure_built()
+        build.ensure_built()
 
     - File contents will be:
         filename: thing.txt
@@ -51,7 +49,17 @@ Dependency:
           text
 
     - Run code: |
-        bundle.manually_trigger("dependent thing").ensure_built()
+        build = Thing(
+            dependent_thing=DependentThing().triggered()
+        ).with_build_path(".")
+
+        build.ensure_built()
+
+    - File contents will be:
+        filename: thing.txt
+        text: |
+          text
+          text
 
     - File contents will be:
         filename: dependentthing.txt
@@ -59,9 +67,4 @@ Dependency:
           text
           text
 
-    - File contents will be:
-        filename: thing.txt
-        text: |
-          text
-          text
 

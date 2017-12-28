@@ -31,7 +31,8 @@ Exception occurred:
 
   - File contents will be:
       filename: thing.txt
-      text: oneline
+      text: |
+        oneline
 
   - Exception raised with:
       code: |

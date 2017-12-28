@@ -75,6 +75,9 @@ class Monitor(object):
     def non_existent(self, path_to_check):
         return condition.NonExistent(path_to_check)
 
+    def rebuilt(self, build):
+        return condition.Rebuilt(self, build)
+
     def not_run_since(self, seconds=0, minutes=0, hours=0, days=0, timedelta=None):
         """
         Returns condition that triggers when a period of time has elapsed since

@@ -5,18 +5,19 @@ Manually trigger:
     trigger a rebuild whenever it is necessary most of
     the time, a manual trigger will sometimes be necessary.
   steps:
-    - Run code: |
-        build.ensure_built()
+  - Run code: |
+      build.ensure_built()
 
-    - File contents will be:
-        filename: thing.txt
-        text: oneline
+  - File contents will be:
+      filename: thing.txt
+      text: |
+        oneline
 
-    - Run code: |
-        build.triggered().ensure_built()
+  - Run code: |
+      build.triggered().ensure_built()
 
-    - File contents will be:
-        filename: thing.txt
-        text: |
-          oneline
-          oneline
+  - File contents will be:
+      filename: thing.txt
+      text: |
+        oneline
+        oneline
