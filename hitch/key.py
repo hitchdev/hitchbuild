@@ -2,7 +2,7 @@ from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions
 from hitchstory import validate, expected_exception
 from hitchrun import hitch_maintenance, expected, DIR
 from pathquery import pathq
-from strictyaml import Optional, Str, Int
+from strictyaml import MapPattern, Optional, Str, Int
 from commandlib import python, Command
 import hitchpython
 import strictyaml
@@ -16,8 +16,8 @@ class Engine(BaseEngine):
         given={
             Optional("python version"): Str(),
             Optional("build.py"): Str(),
-            Optional("sourcefile.txt"): Str(),
             Optional("setup"): Str(),
+            Optional("files"): MapPattern(Str(), Str()),
         },
         params={
             "python version": Str(),
@@ -37,6 +37,12 @@ class Engine(BaseEngine):
         if self.path.state.exists():
             self.path.state.rmtree(ignore_errors=True)
         self.path.state.mkdir()
+
+        for filename, content in self.given.get("files", {}).items():
+            filepath = self.path.state.joinpath(filename)
+            if not filepath.dirname().exists():
+                filepath.dirname().makedirs()
+            filepath.write_text(content)
 
         for filename in ["build.py", "sourcefile.txt", ]:
             if filename in self.given:

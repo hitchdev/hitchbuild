@@ -5,8 +5,9 @@ File changed:
     to leave it be if it exists unless one or more source files have
     changed since the build was last run.
   given:
-    sourcefile.txt: |
-      file that, if changed, should trigger a rebuild
+    files:
+      sourcefile.txt: |
+        file that, if changed, should trigger a rebuild
     setup: |
       from path import Path
       import hitchbuild

@@ -41,6 +41,9 @@ Dependency:
 
           def build(self):
               self.thingfile.write_text("text\n", append=True)
+
+Dependency built:
+  based on: dependency
   steps:
     - Run code: |
         build = Thing(
@@ -60,6 +63,10 @@ Dependency:
         text: |
           text
 
+
+When dependency is triggered rebuild children:
+  based on: dependency built
+  steps:
     - Run code: |
         build = Thing(
             dependent_thing=DependentThing().triggered()

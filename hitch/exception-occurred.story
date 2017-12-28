@@ -4,8 +4,9 @@ Exception occurred:
     If an exception occurs during a build, it is presumed that
     it needs to be run again, no matter what.
   given:
-    sourcefile.txt: |
-      file that, if changed, should trigger a rebuild
+    files:
+      sourcefile.txt: |
+        file that, if changed, should trigger a rebuild
     setup: |
       from code_that_does_things import *
       import hitchbuild
