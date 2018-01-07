@@ -43,6 +43,22 @@ class FileChange(Change):
         return len(self._new) > 0 or len(self._modified) > 0
 
 
+class Changes(object):
+    def __init__(self, changes):
+        self._changes = changes
+
+    @property
+    def why(self):
+        return '\n'.join([
+            change.why for change in self._changes
+        ])
+
+    def __bool__(self):
+        return any(
+            bool(change) for change in self._changes
+        )
+
+
 class Condition(object):
     def __init__(self):
         self._other_condition = None
@@ -59,6 +75,12 @@ class Condition(object):
             conditions.append(other_condition)
             other_condition = other_condition._other_condition
         return conditions
+
+    def check_all(self):
+        return Changes([
+            condition.check() for condition
+            in self.all_conditions()
+        ])
 
 
 class Always(Condition):

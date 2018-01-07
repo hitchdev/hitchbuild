@@ -17,7 +17,8 @@ File changed:
               self._src_dir = Path(src_dir)
 
           def trigger(self):
-              return self.monitor.is_modified([self._src_dir/"sourcefile.txt"])
+              return self.monitor.non_existent(self.thingpath) | \
+                  self.monitor.is_modified([self._src_dir/"sourcefile.txt"])
           
           @property
           def thingpath(self):

@@ -88,7 +88,7 @@ class HitchBuild(object):
                 if dependency.with_default_build_path(self.build_path).ensure_built():
                     dependency_triggered = True
 
-        trigger_check = self.trigger().check()
+        trigger_check = self.trigger().check_all()
 
         triggered = (
             trigger_check or
