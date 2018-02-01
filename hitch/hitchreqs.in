@@ -1,6 +1,6 @@
-hitchstory>=0.8.0
+hitchstory>=0.9.1
 hitchrun
-hitchrunpy
+hitchrunpy>=0.6.0
 hitchpython
 flake8
 jupyter_console

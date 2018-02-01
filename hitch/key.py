@@ -1,30 +1,27 @@
-from hitchstory import StoryCollection, StorySchema, BaseEngine, exceptions
-from hitchstory import validate, expected_exception
+from hitchstory import StoryCollection, BaseEngine, exceptions
+from hitchstory import GivenDefinition, GivenProperty, InfoDefinition, InfoProperty
+from hitchstory import validate, no_stacktrace_for
 from hitchrun import hitch_maintenance, expected, DIR
 from pathquery import pathq
-from strictyaml import MapPattern, Optional, Str, Int
+from strictyaml import MapPattern, Optional, Map, Str, Int
 from commandlib import python, Command
 import hitchpython
 import strictyaml
 import hitchtest
-from hitchrunpy import ExamplePythonCode
+from hitchrunpy import ExamplePythonCode, HitchRunPyException
 from templex import Templex
 
 
 class Engine(BaseEngine):
-    schema = StorySchema(
-        given={
-            Optional("python version"): Str(),
-            Optional("build.py"): Str(),
-            Optional("setup"): Str(),
-            Optional("files"): MapPattern(Str(), Str()),
-        },
-        params={
-            "python version": Str(),
-        },
-        info={
-            Optional("about"): Str(),
-        },
+    given_definition = GivenDefinition(
+        python_version=GivenProperty(Str()),
+        build_py=GivenProperty(Str()),
+        setup=GivenProperty(Str()),
+        files=GivenProperty(MapPattern(Str(), Str())),
+    )
+
+    info_definition = InfoDefinition(
+        about=InfoProperty(),
     )
 
     def __init__(self, paths, settings):
@@ -38,24 +35,20 @@ class Engine(BaseEngine):
             self.path.state.rmtree(ignore_errors=True)
         self.path.state.mkdir()
 
-        for filename, content in self.given.get("files", {}).items():
+        for filename, contents in self.given.files.items():
             filepath = self.path.state.joinpath(filename)
             if not filepath.dirname().exists():
                 filepath.dirname().makedirs()
-            filepath.write_text(content)
+            filepath.write_text(contents)
 
-        for filename in ["build.py", "sourcefile.txt", ]:
-            if filename in self.given:
-                filepath = self.path.state.joinpath(filename)
-                if not filepath.dirname().exists():
-                    filepath.dirname().mkdir()
-                filepath.write_text(str(self.given[filename]))
+        if self.given.build_py is not None:
+            self.path.state.joinpath("build.py").write_text(
+                self.given.build_py
+            )
 
         self.path.key.joinpath("code_that_does_things.py").copy(self.path.state)
 
-        self.python_package = hitchpython.PythonPackage(
-            self.given.get('python_version', self.given['python version'])
-        )
+        self.python_package = hitchpython.PythonPackage(self.given.python_version)
         self.python_package.build()
 
         self.pip = self.python_package.cmd.pip
@@ -72,29 +65,84 @@ class Engine(BaseEngine):
                 self.pip("uninstall", "hitchbuild", "-y").ignore_errors().run()
                 self.pip("install", ".").in_dir(self.path.project).run()
 
-    def run_code(self, code):
-        ExamplePythonCode(code).with_setup_code(self.given.get('setup', ''))\
-                               .run(self.path.state, self.python)
+        self.example_py_code = ExamplePythonCode(self.python, self.path.state)\
+            .with_setup_code(self.given.setup)\
+            .with_terminal_size(160, 100)
+
+    def _story_friendly_output(self, output):
+        """
+        Takes output and replaces with a deterministic, representative or
+        more human readable output.
+        """
+        return output.replace(self.path.state, "/path/to")
+
+    @no_stacktrace_for(AssertionError)
+    @no_stacktrace_for(HitchRunPyException)
+    @validate(
+        code=Str(),
+        will_output=Str(),
+        raises=Map({
+            Optional("type"): Str(),
+            Optional("message"): Str(),
+        })
+    )
+    def run_code(self, code, will_output=None, raises=None):
+        self.example_py_code = ExamplePythonCode(self.python, self.path.state)\
+            .with_terminal_size(160, 100)\
+            .with_setup_code(self.given.setup)
+        to_run = self.example_py_code.with_code(code)
+
+        if self.settings.get("cprofile"):
+            to_run = to_run.with_cprofile(
+                self.path.profile.joinpath("{0}.dat".format(self.story.slug))
+            )
+
+        result = to_run.expect_exceptions().run() if raises is not None else to_run.run()
+
+        actual_output = self._story_friendly_output(result.output)
+
+        if will_output is not None:
+            try:
+                Templex(will_output).assert_match(actual_output)
+            except AssertionError:
+                if self.settings.get("overwrite artefacts"):
+                    self.current_step.update(**{"will output": actual_output})
+                else:
+                    raise
+
+        if raises is not None:
+            exception_type = raises.get('type')
+            message = raises.get('message')
+
+            try:
+                result = self.example_py_code.expect_exceptions().run()
+                result.exception_was_raised(exception_type)
+                exception_message = self._story_friendly_output(result.exception.message)
+                Templex(exception_message).assert_match(message)
+            except AssertionError:
+                if self.settings.get("overwrite artefacts"):
+                    new_raises = raises.copy()
+                    new_raises['message'] = exception_message
+                    self.current_step.update(raises=new_raises)
+                else:
+                    raise
 
     def exception_raised_with(self, code, exception_type, message):
-        result = ExamplePythonCode(code).with_setup_code(self.given.get('setup', ''))\
+        result = ExamplePythonCode(code).with_setup_code(self.given.setup)\
                                         .expect_exceptions()\
                                         .run(self.path.state, self.python)
         result.exception_was_raised(exception_type, message)
 
-    def run(self, command):
-        self.ipython_step_library.run(command)
-
     def touch_file(self, filename):
         self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)
 
-    @expected_exception(AssertionError)
+    @no_stacktrace_for(AssertionError)
     def file_exists(self, filename):
         assert self.path.state.joinpath(filename).exists(), \
            "{0} does not exist".format(filename)
 
-    @expected_exception(FileNotFoundError)
-    @expected_exception(AssertionError)
+    @no_stacktrace_for(FileNotFoundError)
+    @no_stacktrace_for(AssertionError)
     def file_contents_will_be(self, filename, text=None):
         try:
             Templex(self.path.state.joinpath(filename).text()).assert_match(text)
@@ -116,7 +164,6 @@ class Engine(BaseEngine):
             self.new_story.save()
 
 
-@expected(strictyaml.exceptions.YAMLValidationError)
 @expected(exceptions.HitchStoryException)
 def bdd(*keywords):
     """

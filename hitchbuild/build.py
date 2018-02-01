@@ -1,5 +1,6 @@
 from hitchbuild.monitor import Monitor
 from hitchbuild.condition import Always
+from hitchbuild import exceptions
 from path import Path
 from copy import copy
 
@@ -40,6 +41,11 @@ class HitchBuild(object):
     def with_build_path(self, path):
         new_build = copy(self)
         new_build._build_path = Path(path)
+
+        if not new_build._build_path.exists():
+            raise exceptions.BuildPathNonexistent(
+                new_build._build_path.abspath()
+            )
         return new_build
 
     def with_default_build_path(self, path):

@@ -1,4 +1,4 @@
-Exception occurred:
+Exception occurred during build:
   based on: HitchBuild
   description: |
     If an exception occurs during a build, it is presumed that
@@ -8,7 +8,6 @@ Exception occurred:
       sourcefile.txt: |
         file that, if changed, should trigger a rebuild
     setup: |
-      from code_that_does_things import *
       import hitchbuild
 
       class Thing(hitchbuild.HitchBuild):
@@ -22,24 +21,26 @@ Exception occurred:
           def build(self):
               self.thingpath.write_text("oneline\n", append=True)
 
-              raise ExampleException("build had an error")
+              raise Exception("build had an error")
   steps:
-  - Exception raised with:
+  - Run code:
       code: |
         Thing().with_build_path(".").ensure_built()
-      exception type: code_that_does_things.ExampleException
-      message: build had an error
+      raises:
+        type: builtins.Exception
+        message: build had an error
 
   - File contents will be:
       filename: thing.txt
       text: |
         oneline
 
-  - Exception raised with:
+  - Run code:
       code: |
         Thing().with_build_path(".").ensure_built()
-      exception type: code_that_does_things.ExampleException
-      message: build had an error
+      raises:
+        type: builtins.Exception
+        message: build had an error
 
   - File contents will be:
       filename: thing.txt
