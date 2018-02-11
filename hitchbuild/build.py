@@ -5,6 +5,36 @@ from path import Path
 from copy import copy
 
 
+class Files(object):
+    def __init__(self, filechanges):
+        self._filechanges = filechanges
+
+    @property
+    def modified(self):
+        return self._filechanges._modified
+
+
+class LastRun(object):
+    def __init__(self, checks, last_run_had_exception, manual_trigger, dependency_trigger):
+        self.checks = checks
+        self.last_run_had_exception = last_run_had_exception
+        self.manual_trigger = manual_trigger
+        self.dependency_trigger = dependency_trigger
+
+    @property
+    def triggered(self):
+        return self.checks or self.last_run_had_exception \
+          or self.manual_trigger or self.dependency_trigger
+
+    @property
+    def files(self):
+        from hitchbuild.condition import FileChange
+
+        for change in self.checks._changes:
+            if isinstance(change, FileChange):
+                return Files(change)
+
+
 class HitchBuild(object):
     def __init__(self):
         pass
@@ -94,14 +124,14 @@ class HitchBuild(object):
                 if dependency.with_default_build_path(self.build_path).ensure_built():
                     dependency_triggered = True
 
-        trigger_check = self.trigger().check_all()
-
-        triggered = (
-            trigger_check or
-            self.monitor.last_run_had_exception or
-            self.was_manually_triggered or
-            dependency_triggered
+        self.last_run = LastRun(
+            self.trigger().check_all(),
+            self.monitor.last_run_had_exception,
+            self.was_manually_triggered,
+            dependency_triggered,
         )
+
+        triggered = self.last_run.triggered
 
         if triggered:
             with self.monitor.context_manager():
