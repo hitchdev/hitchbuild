@@ -25,11 +25,18 @@ File changed:
               return self.build_path/"thing.txt"
 
           def build(self):
+              self.thingpath.write_text("build triggered\n", append=True)
               self.thingpath.write_text(
-                  "build triggered because files changed:\n{0}".format(
-                      ', '.join(self.last_run.files.modified),
-                  ), 
-                  append=True
+                  "files changed: {0}\n".format(', '.join(self.last_run.path_changes)),
+                  append=True,
+              )
+              self.thingpath.write_text(
+                  str(self.last_run.only.path_changes) + '\n',
+                  append=True,
+              )
+              self.thingpath.write_text(
+                  str("sourcefile.txt" in self.last_run.path_changes) + '\n',
+                  append=True,
               )
               
 
@@ -42,7 +49,10 @@ File changed:
   - File contents will be:
       filename: thing.txt
       text: |
-        build triggered because files changed:
+        build triggered
+        files changed: 
+        False
+        False
 
   - Sleep: 1 
 
@@ -54,6 +64,11 @@ File changed:
   - File contents will be:
       filename: thing.txt
       text: |-
-        build triggered because files changed:
-        build triggered because files changed:
-        ./sourcefile.txt
+        build triggered
+        files changed: 
+        False
+        False
+        build triggered
+        files changed: ./sourcefile.txt
+        True
+        True

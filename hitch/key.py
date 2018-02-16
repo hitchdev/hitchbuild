@@ -145,7 +145,7 @@ class Engine(BaseEngine):
     @no_stacktrace_for(AssertionError)
     def file_contents_will_be(self, filename, text=None):
         try:
-            Templex(self.path.state.joinpath(filename).text()).assert_match(text)
+            Templex(text).assert_match(self.path.state.joinpath(filename).text())
         except AssertionError:
             if self.settings.get("overwrite artefacts"):
                 self.current_step.update(

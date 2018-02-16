@@ -5,13 +5,50 @@ from path import Path
 from copy import copy
 
 
-class Files(object):
+class PathChanges(object):
     def __init__(self, filechanges):
         self._filechanges = filechanges
 
-    @property
-    def modified(self):
+    def changes(self):
         return self._filechanges._modified
+
+    def __len__(self):
+        return len(self.changes())
+
+    def __getitem__(self, index):
+        return self.changes()[index]
+
+    def __contains__(self, item):
+        for modified in self.changes():
+            if Path(item).abspath() == Path(item).abspath():
+                return True
+        return False
+
+
+class Only(object):
+    def __init__(self, last_run):
+        self._last_run = last_run
+
+    @property
+    def path_changes(self):
+        from hitchbuild.condition import FileChange
+        filechange = False
+        otherchange = False
+        for change in self._last_run.checks._changes:
+            if isinstance(change, FileChange):
+                filechange = True
+            if isinstance(change, bool):
+                if change:
+                    otherchange = True
+        if self._last_run.last_run_had_exception:
+            otherchange = True
+        if self._last_run.dependency_trigger or self._last_run.manual_trigger:
+            otherchange = True
+        if not otherchange and filechange:
+            return True
+        if otherchange or not filechange:
+            return False
+        return None
 
 
 class LastRun(object):
@@ -27,12 +64,16 @@ class LastRun(object):
           or self.manual_trigger or self.dependency_trigger
 
     @property
-    def files(self):
+    def only(self):
+        return Only(self)
+
+    @property
+    def path_changes(self):
         from hitchbuild.condition import FileChange
 
         for change in self.checks._changes:
             if isinstance(change, FileChange):
-                return Files(change)
+                return PathChanges(change)
 
 
 class HitchBuild(object):
