@@ -136,6 +136,9 @@ class Engine(BaseEngine):
     def touch_file(self, filename):
         self.path.state.joinpath(filename).write_text("\nfile touched!", append=True)
 
+    def write_file(self, filename, content):
+        self.path.state.joinpath(filename).write_text(content)
+
     @no_stacktrace_for(AssertionError)
     def file_exists(self, filename):
         assert self.path.state.joinpath(filename).exists(), \

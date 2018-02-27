@@ -25,6 +25,26 @@ class PathChanges(object):
         return False
 
 
+class VarChanges(object):
+    def __init__(self, varchanges):
+        self._varchanges = varchanges
+
+    def changes(self):
+        return self._varchanges._modified
+
+    def __len__(self):
+        return len(self.changes())
+
+    def __getitem__(self, index):
+        return self.changes()[index]
+
+    def __contains__(self, item):
+        for modified in self.changes():
+            if Path(item).abspath() == Path(item).abspath():
+                return True
+        return False
+
+
 class Only(object):
     def __init__(self, last_run):
         self._last_run = last_run
@@ -68,12 +88,22 @@ class LastRun(object):
         return Only(self)
 
     @property
+    def var_changes(self):
+        from hitchbuild.condition import VarChange
+
+        for change in self.checks._changes:
+            if isinstance(change, VarChange):
+                return VarChanges(change)
+        return None
+
+    @property
     def path_changes(self):
         from hitchbuild.condition import FileChange
 
         for change in self.checks._changes:
             if isinstance(change, FileChange):
                 return PathChanges(change)
+        return None
 
 
 class HitchBuild(object):

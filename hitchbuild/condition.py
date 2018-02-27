@@ -43,6 +43,15 @@ class FileChange(Change):
         return len(self._new) > 0 or len(self._modified) > 0
 
 
+class VarChange(Change):
+    def __init__(self, new, modified):
+        self._new = new
+        self._modified = modified
+
+    def __bool__(self):
+        return len(self._new) > 0 or len(self._modified) > 0
+
+
 class Changes(object):
     def __init__(self, changes):
         self._changes = changes
@@ -144,6 +153,38 @@ class NotRunSince(Condition):
             return TimeElapsedChange(model.last_run, self._timedelta)
         else:
             return NoChange()
+
+
+class VarChanged(Condition):
+    def __init__(self, monitor, variables):
+        # TODO : check variables for hashability, hash length < 1000, stringability
+        self._monitor = monitor
+        self._variables = variables
+        super(VarChanged, self).__init__()
+
+    def check(self):
+        new_vars = self._variables.copy()
+        modified_vars = []
+
+        for var in self._monitor.Variable.filter(build=self._monitor.build_model):
+            name = var.name
+            del new_vars[name]
+            if name in self._variables.keys():
+                if str(hash(self._variables[name])) != var.hashval:
+                    modified_vars.append(name)
+                    var.hashval = hash(self._variables[name])
+                    var.strval = str(self._variables[name])
+
+        for name in new_vars:
+            var_model = self._monitor.Variable(
+                build=self._monitor.build_model,
+                name=name,
+                hashval=hash(self._variables[name]),
+                strval=str(self._variables[name]),
+            )
+            var_model.save()
+
+        return VarChange(new_vars, modified_vars)
 
 
 class Modified(Condition):

@@ -42,14 +42,23 @@ class Monitor(object):
             filename = CharField(max_length=640)
             last_modified = FloatField()
 
+        class Variable(BaseModel):
+            build = ForeignKeyField(Build)
+            name = CharField(max_length=128)
+            hashval = CharField(max_length=1024)
+            strval = CharField(max_length=1024)
+
         if not Build.table_exists():
             Build.create_table()
         if not File.table_exists():
             File.create_table()
+        if not Variable.table_exists():
+            Variable.create_table()
 
         self.BaseModel = BaseModel
         self.File = File
         self.Build = Build
+        self.Variable = Variable
 
     @property
     def build_model(self):
@@ -71,6 +80,9 @@ class Monitor(object):
 
     def is_modified(self, path_list):
         return condition.Modified(self, path_list)
+
+    def var_changed(self, **variables):
+        return condition.VarChanged(self, variables)
 
     def non_existent(self, path_to_check):
         return condition.NonExistent(path_to_check)
