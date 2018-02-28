@@ -30,7 +30,7 @@ class VarChanges(object):
         self._varchanges = varchanges
 
     def changes(self):
-        return self._varchanges._modified
+        return self._varchanges._modified + self._varchanges._new
 
     def __len__(self):
         return len(self.changes())

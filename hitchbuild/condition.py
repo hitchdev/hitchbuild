@@ -184,7 +184,7 @@ class VarChanged(Condition):
             )
             var_model.save()
 
-        return VarChange(new_vars, modified_vars)
+        return VarChange(list(new_vars.keys()), modified_vars)
 
 
 class Modified(Condition):

@@ -56,7 +56,7 @@ Variable changed:
       filename: thing.txt
       text: |
         build triggered
-        vars changed: 
+        vars changed: src_contents
 
   - Write file:
       filename: sourcefile.txt
@@ -69,6 +69,6 @@ Variable changed:
       filename: thing.txt
       text: |-
         build triggered
-        vars changed: 
+        vars changed: src_contents
         build triggered
         vars changed: src_contents
