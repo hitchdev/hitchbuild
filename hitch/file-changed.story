@@ -50,9 +50,9 @@ File changed:
       filename: thing.txt
       text: |
         build triggered
-        files changed: 
+        files changed: ./sourcefile.txt
         False
-        False
+        True
 
   - Sleep: 1 
 
@@ -65,9 +65,9 @@ File changed:
       filename: thing.txt
       text: |-
         build triggered
-        files changed: 
+        files changed: ./sourcefile.txt
         False
-        False
+        True
         build triggered
         files changed: ./sourcefile.txt
         True

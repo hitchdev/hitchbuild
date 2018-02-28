@@ -10,7 +10,7 @@ class PathChanges(object):
         self._filechanges = filechanges
 
     def changes(self):
-        return self._filechanges._modified
+        return self._filechanges._modified + self._filechanges._new
 
     def __len__(self):
         return len(self.changes())
