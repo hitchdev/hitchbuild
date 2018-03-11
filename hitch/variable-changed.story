@@ -20,19 +20,22 @@ Variable changed:
     setup: |
       from path import Path
       import hitchbuild
+      import hashlib
 
       class Thing(hitchbuild.HitchBuild):
           def __init__(self, src_dir):
               self._src_dir = Path(src_dir)
+              self._src_contents = self.monitored_vars(
+                  srcfile=self._src_dir.joinpath("sourcefile.txt").text(),
+              )
 
-          def trigger(self):
-              return self.monitor.non_existent(self.thingpath) | \
-                  self.monitor.var_changed(src_contents=self.srcfile.text())
-          
           @property
           def srcfile(self):
               return self._src_dir/"sourcefile.txt"
-          
+
+          def fingerprint(self):
+              return hashlib.sha1(self.thingpath.bytes()).hexdigest()
+
           @property
           def thingpath(self):
               return self.build_path/"thing.txt"
@@ -40,7 +43,7 @@ Variable changed:
           def build(self):
               self.thingpath.write_text("build triggered\n", append=True)
               self.thingpath.write_text(
-                  "vars changed: {0}\n".format(', '.join(self.last_run.var_changes)),
+                  "vars changed: {0}\n".format(', '.join(self._src_contents.changes)),
                   append=True,
               )
               
@@ -56,7 +59,9 @@ Variable changed:
       filename: thing.txt
       text: |
         build triggered
-        vars changed: src_contents
+        vars changed: srcfile
+        build triggered
+        vars changed: 
 
   - Write file:
       filename: sourcefile.txt
@@ -69,6 +74,8 @@ Variable changed:
       filename: thing.txt
       text: |-
         build triggered
-        vars changed: src_contents
+        vars changed: srcfile
         build triggered
-        vars changed: src_contents
+        vars changed: 
+        build triggered
+        vars changed: srcfile

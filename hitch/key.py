@@ -144,15 +144,21 @@ class Engine(BaseEngine):
         assert self.path.state.joinpath(filename).exists(), \
            "{0} does not exist".format(filename)
 
+    def _rewritten_output(self, text):
+        return text.replace(self.path.state, "/path/to")
+
     @no_stacktrace_for(FileNotFoundError)
     @no_stacktrace_for(AssertionError)
     def file_contents_will_be(self, filename, text=None):
+        rewritten_contents = self._rewritten_output(
+            self.path.state.joinpath(filename).text()
+        )
         try:
-            Templex(text).assert_match(self.path.state.joinpath(filename).text())
+            Templex(text).assert_match(rewritten_contents)
         except AssertionError:
             if self.settings.get("overwrite artefacts"):
                 self.current_step.update(
-                    text=self.path.state.joinpath(filename).text()
+                    text=rewritten_contents
                 )
             else:
                 raise

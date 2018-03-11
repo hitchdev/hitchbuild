@@ -36,6 +36,7 @@ class Monitor(object):
             exception_raised = BooleanField()
             last_run = DateTimeField(null=True)
             was_triggered_on_last_run = BooleanField(null=True)
+            fingerprint = CharField(null=True)
 
         class File(BaseModel):
             build = ForeignKeyField(Build)

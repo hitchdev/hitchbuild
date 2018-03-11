@@ -1,41 +1,40 @@
 Not run since:
   based on: HitchBuild
-  given:
-    setup: |
-      import hitchbuild
+  #given:
+    #setup: |
+      #import hitchbuild
+      #import hashlib
 
-      class Thing(hitchbuild.HitchBuild):
-          def __init__(self):
-              pass
-
-          def trigger(self):
-              return self.monitor.not_run_since(seconds=1)
-
-          @property
-          def thingpath(self):
-              return self.build_path/"thing.txt"
+      #class Thing(hitchbuild.HitchBuild):
+          #@property
+          #def thingpath(self):
+              #return self.build_path/"thing.txt"
       
-          def build(self):
-              self.thingpath.write_text("oneline\n", append=True)
-      
-      build = Thing().with_build_path(".")
-  steps:
-    - Run code: |
-        build.ensure_built()
-        build.ensure_built()
+          #def fingerprint(self):
+              #return hashlib.sha1(self.thingpath.bytes()).hexdigest()
 
-    - File contents will be:
-        filename: thing.txt
-        text: |
-          oneline
+          #def build(self):
+              #if self.monitor.not_run_since(seconds=1):
+                  #self.thingpath.write_text("oneline\n", append=True)
 
-    - Sleep: 2
+      #build = Thing().with_build_path(".")
+  #steps:
+    #- Run code: |
+        #build.ensure_built()
+        #build.ensure_built()
 
-    - Run code: |
-        build.ensure_built()
+    #- File contents will be:
+        #filename: thing.txt
+        #text: |
+          #oneline
 
-    - File contents will be:
-        filename: thing.txt
-        text: |
-          oneline
-          oneline
+    #- Sleep: 2
+
+    #- Run code: |
+        #build.ensure_built()
+
+    #- File contents will be:
+        #filename: thing.txt
+        #text: |
+          #oneline
+          #oneline

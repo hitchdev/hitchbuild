@@ -9,33 +9,31 @@ File changed:
       sourcefile.txt: |
         file that, if changed, should trigger a rebuild
     setup: |
-      from path import Path
       import hitchbuild
+      from pathquery import pathquery
+      import hashlib
 
       class Thing(hitchbuild.HitchBuild):
           def __init__(self, src_dir):
-              self._src_dir = Path(src_dir)
-
-          def trigger(self):
-              return self.monitor.non_existent(self.thingpath) | \
-                  self.monitor.is_modified([self._src_dir/"sourcefile.txt"])
+              self._src = self.from_source(
+                  pathquery(src_dir).named("sourcefile.txt"),
+              )
           
           @property
           def thingpath(self):
               return self.build_path/"thing.txt"
 
+          def fingerprint(self):
+              return hashlib.sha1(self.thingpath.bytes()).hexdigest()
+
           def build(self):
               self.thingpath.write_text("build triggered\n", append=True)
               self.thingpath.write_text(
-                  "files changed: {0}\n".format(', '.join(self.last_run.path_changes)),
+                  "files changed: {0}\n".format(', '.join(self._src.changes)),
                   append=True,
               )
               self.thingpath.write_text(
-                  str(self.last_run.only.path_changes) + '\n',
-                  append=True,
-              )
-              self.thingpath.write_text(
-                  str("sourcefile.txt" in self.last_run.path_changes) + '\n',
+                  str("sourcefile.txt" in self._src.changes) + '\n',
                   append=True,
               )
               
@@ -50,9 +48,11 @@ File changed:
       filename: thing.txt
       text: |
         build triggered
-        files changed: ./sourcefile.txt
-        False
+        files changed: /path/to/sourcefile.txt
         True
+        build triggered
+        files changed: 
+        False
 
   - Sleep: 1 
 
@@ -65,10 +65,11 @@ File changed:
       filename: thing.txt
       text: |-
         build triggered
-        files changed: ./sourcefile.txt
-        False
+        files changed: /path/to/sourcefile.txt
         True
         build triggered
-        files changed: ./sourcefile.txt
-        True
+        files changed: 
+        False
+        build triggered
+        files changed: /path/to/sourcefile.txt
         True

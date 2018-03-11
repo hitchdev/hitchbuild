@@ -18,94 +18,111 @@ Dependency:
         This directory is where the special builds go.
     setup: |
       import hitchbuild
+      import hashlib
+      import random
 
-      class DependentThing(hitchbuild.HitchBuild):
+      class Dependency(hitchbuild.HitchBuild):
           @property
           def thingfile(self):
               return self.build_path/"dependentthing.txt"
 
-          def trigger(self):
-              return self.monitor.non_existent(self.thingfile)
+          @property
+          def log(self):
+              return self.build_path/"log.txt"
+          
+          def fingerprint(self):
+              return hashlib.sha1(self.thingfile.bytes()).hexdigest()
 
           def build(self):
-              self.thingfile.write_text("text\n", append=True)
+              if not self.thingfile.exists():
+                  self.thingfile.write_text(
+                      str(random.randrange(10**6, 10**7))
+                  )
+                  self.log.write_text("dependency task run\n", append=True)
+          
+          def clean(self):
+              if self.thingfile.exists():
+                  self.thingfile.remove()
 
 
       class Thing(hitchbuild.HitchBuild):
-          def __init__(self, dependent_thing):
-              self.dependent_thing = self.as_dependency(dependent_thing)
-              
+          def __init__(self, dependency):
+              self.dependency = self.as_dependency(dependency)
+
+          @property
+          def log(self):
+              return self.build_path/"log.txt"
+
           @property
           def thingfile(self):
               return self.build_path/"thing.txt"
 
-          def trigger(self):
-              return self.monitor.non_existent(self.thingfile)
+          def fingerprint(self):
+              return hashlib.sha1(self.thingfile.bytes()).hexdigest()
 
           def build(self):
-              self.thingfile.write_text("text\n", append=True)
+              if not self.thingfile.exists() or self.dependency.rebuilt:
+                  self.thingfile.write_text("text\n", append=True)
+                  self.log.write_text("thing task run\n", append=True)
+
 
 Dependency built:
   based on: dependency
   steps:
   - Run code: |
       build = Thing(
-          dependent_thing=DependentThing()
+          dependency=Dependency()
       ).with_build_path(".")
 
       build.ensure_built()
       build.ensure_built()
 
   - File contents will be:
-      filename: thing.txt
+      filename: log.txt
       text: |
-        text
+        dependency task run
+        thing task run
 
-  - File contents will be:
-      filename: dependentthing.txt
-      text: |
-        text
+  variations:
+    When dependency is rebuilt rebuild children:
+      steps:
+      - Run code: |
+          build = Thing(
+              dependency=Dependency().with_build_path("."),
+          ).with_build_path(".")
 
+          build.dependency.clean()
+          build.ensure_built()
 
-When dependency is triggered rebuild children:
-  based on: dependency built
-  steps:
-  - Run code: |
-      build = Thing(
-          dependent_thing=DependentThing().triggered()
-      ).with_build_path(".")
+      - File contents will be:
+          filename: log.txt
+          text: |
+            dependency task run
+            thing task run
+            dependency task run
+            thing task run
 
-      build.ensure_built()
+    When dependency has directory specified, use that one:
+      steps:
+      - Run code: |
+          build = Thing(
+              dependency=Dependency().with_build_path("special")
+          ).with_build_path(".")
 
-  - File contents will be:
-      filename: thing.txt
-      text: |
-        text
-        text
-
-  - File contents will be:
-      filename: dependentthing.txt
-      text: |
-        text
-        text
-
-When dependency has directory specified, use that one:
-  based on: dependency
-  steps:
-  - Run code: |
-      build = Thing(
-          dependent_thing=DependentThing().with_build_path("special")
-      ).with_build_path(".")
-
-      build.ensure_built()
-      build.ensure_built()
+          build.ensure_built()
+          build.ensure_built()
+          
+      - File exists: special/dependentthing.txt
       
-  - File contents will be:
-      filename: thing.txt
-      text: |
-        text
-        
-  - File contents will be:
-      filename: special/dependentthing.txt
-      text: |
-        text
+      - File contents will be:
+          filename: special/log.txt
+          text: |
+            dependency task run
+
+      - File contents will be:
+          filename: log.txt
+          text: |
+            dependency task run
+            thing task run
+            thing task run
+            
