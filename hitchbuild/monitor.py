@@ -40,6 +40,7 @@ class Monitor(object):
 
         class File(BaseModel):
             build = ForeignKeyField(Build)
+            name = CharField(max_length=128)
             filename = CharField(max_length=640)
             last_modified = FloatField()
 

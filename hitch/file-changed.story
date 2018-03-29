@@ -6,7 +6,9 @@ File changed:
     changed since the build was last run.
   given:
     files:
-      sourcefile.txt: |
+      sourcefile1.txt: |
+        file that, if changed, should trigger a rebuild
+      sourcefile2.txt: |
         file that, if changed, should trigger a rebuild
     setup: |
       import hitchbuild
@@ -15,8 +17,13 @@ File changed:
 
       class Thing(hitchbuild.HitchBuild):
           def __init__(self, src_dir):
-              self._src = self.from_source(
-                  pathquery(src_dir).named("sourcefile.txt"),
+              self._src1 = self.from_source(
+                  "firstsource",
+                  pathquery(src_dir).named("sourcefile1.txt"),
+              )
+              self._src2 = self.from_source(
+                  "secondsource",
+                  pathquery(src_dir).named("sourcefile1.txt"),
               )
           
           @property
@@ -29,11 +36,19 @@ File changed:
           def build(self):
               self.thingpath.write_text("build triggered\n", append=True)
               self.thingpath.write_text(
-                  "files changed: {0}\n".format(', '.join(self._src.changes)),
+                  "files changed: {0}\n".format(', '.join(self._src1.changes)),
                   append=True,
               )
               self.thingpath.write_text(
-                  str("sourcefile.txt" in self._src.changes) + '\n',
+                  str("sourcefile1.txt" in self._src1.changes) + '\n',
+                  append=True,
+              )
+              self.thingpath.write_text(
+                  "files changed: {0}\n".format(', '.join(self._src2.changes)),
+                  append=True,
+              )
+              self.thingpath.write_text(
+                  str("sourcefile2.txt" in self._src2.changes) + '\n',
                   append=True,
               )
               
@@ -48,9 +63,13 @@ File changed:
       filename: thing.txt
       text: |
         build triggered
-        files changed: /path/to/sourcefile.txt
+        files changed: /path/to/sourcefile1.txt
+        True
+        files changed: /path/to/sourcefile1.txt
         True
         build triggered
+        files changed: 
+        False
         files changed: 
         False
 
@@ -65,11 +84,17 @@ File changed:
       filename: thing.txt
       text: |-
         build triggered
-        files changed: /path/to/sourcefile.txt
+        files changed: /path/to/sourcefile1.txt
+        True
+        files changed: /path/to/sourcefile1.txt
         True
         build triggered
         files changed: 
         False
+        files changed: 
+        False
         build triggered
-        files changed: /path/to/sourcefile.txt
-        True
+        files changed: 
+        False
+        files changed: 
+        False

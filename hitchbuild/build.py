@@ -107,8 +107,9 @@ class PathChanges(object):
 
 
 class Source(Watcher):
-    def __init__(self, build, paths):
+    def __init__(self, build, name, paths):
         self._build = build
+        self._name = name
         self._paths = paths
         self._build._add_watcher(self)
 
@@ -118,7 +119,8 @@ class Source(Watcher):
 
         from os import path as ospath
 
-        for monitored_file in monitor.File.filter(build=monitor.build_model):
+        for monitored_file in monitor.File.filter(build=monitor.build_model)\
+                                          .filter(name=self._name):
             filename = monitored_file.filename
             if filename in self._paths:
                 new_files.remove(filename)
@@ -131,6 +133,7 @@ class Source(Watcher):
         for filename in new_files:
             file_model = monitor.File(
                 build=monitor.build_model,
+                name=self._name,
                 filename=filename,
                 last_modified=ospath.getmtime(filename),
             )
@@ -174,8 +177,8 @@ class HitchBuild(object):
     def __init__(self):
         pass
 
-    def from_source(self, paths):
-        return Source(self, paths)
+    def from_source(self, name, paths):
+        return Source(self, name, paths)
 
     def monitored_vars(self, **variables):
         return MonitoredVars(self, variables)
