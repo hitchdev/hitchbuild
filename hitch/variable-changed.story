@@ -11,8 +11,15 @@ Variable changed:
     - A version for the build itself (trigger a rebuild if the code has changed).
     
     HitchBuild will hash any variable it is passed to determine if it
-    has changed, so, for example, you cannot directly use a list (although
-    you can use tuple(a_list).
+    has changed. Any of the following or a combination
+    are acceptable values - no other values are acceptable:
+    
+    * List
+    * Dict
+    * String
+    * Float
+    * Integer
+    * Boolean
   given:
     files:
       sourcefile.txt: |
@@ -20,13 +27,13 @@ Variable changed:
     setup: |
       from path import Path
       import hitchbuild
-      import hashlib
 
       class Thing(hitchbuild.HitchBuild):
-          def __init__(self, src_dir):
+          def __init__(self, src_dir, variable_value):
               self._src_dir = Path(src_dir)
-              self._src_contents = self.monitored_vars(
-                  srcfile=self._src_dir.joinpath("sourcefile.txt").text(),
+              self._variable_value = variable_value
+              self._var_contents = self.monitored_vars(
+                  var=self._variable_value,
               )
 
           @property
@@ -34,7 +41,7 @@ Variable changed:
               return self._src_dir/"sourcefile.txt"
 
           def fingerprint(self):
-              return hashlib.sha1(self.thingpath.bytes()).hexdigest()
+              return self._variable_value
 
           @property
           def thingpath(self):
@@ -43,54 +50,47 @@ Variable changed:
           def build(self):
               self.thingpath.write_text("build triggered\n", append=True)
               self.thingpath.write_text(
-                  "vars changed: {0}\n".format(', '.join(self._src_contents.changes)),
+                  "vars changed: {0}\n".format(', '.join(self._var_contents.changes)),
                   append=True,
               )
-              
-
-      build = Thing(src_dir=".").with_build_path(".")
 
   steps:
   - Run code: |
-      build.ensure_built()
-      build.ensure_built()
+      Thing(".", "1").with_build_path(".").ensure_built()
+      Thing(".", "1").with_build_path(".").ensure_built()
 
   - File contents will be:
       filename: thing.txt
       text: |
         build triggered
-        vars changed: srcfile
+        vars changed: var
         build triggered
         vars changed: 
 
-  - Write file:
-      filename: sourcefile.txt
-      content: the contents, now changed, should trigger a rebuild.
-
   - Run code: |
-      build.ensure_built()
+      Thing(".", "2").with_build_path(".").ensure_built()
 
   - File contents will be:
       filename: thing.txt
       text: |-
         build triggered
-        vars changed: srcfile
+        vars changed: var
         build triggered
         vars changed: 
         build triggered
-        vars changed: srcfile
+        vars changed: var
         
   - Run code: |
-      build.ensure_built()
+      Thing(".", "2").with_build_path(".").ensure_built()
       
   - File contents will be:
       filename: thing.txt
       text: |-
         build triggered
-        vars changed: srcfile
+        vars changed: var
         build triggered
         vars changed: 
         build triggered
-        vars changed: srcfile
+        vars changed: var
         build triggered
         vars changed: 
