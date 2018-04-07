@@ -79,3 +79,18 @@ Variable changed:
         vars changed: 
         build triggered
         vars changed: srcfile
+        
+  - Run code: |
+      build.ensure_built()
+      
+  - File contents will be:
+      filename: thing.txt
+      text: |-
+        build triggered
+        vars changed: srcfile
+        build triggered
+        vars changed: 
+        build triggered
+        vars changed: srcfile
+        build triggered
+        vars changed: 

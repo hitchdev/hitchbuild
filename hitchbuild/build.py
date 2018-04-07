@@ -1,6 +1,7 @@
 from hitchbuild.monitor import Monitor
 from hitchbuild.condition import Always
 from hitchbuild import exceptions
+from hitchbuild.utils import hashstring
 from path import Path
 from copy import copy
 
@@ -156,16 +157,17 @@ class MonitoredVars(Watcher):
             name = var.name
             del new_vars[name]
             if name in self._variables.keys():
-                if str(hash(self._variables[name])) != var.hashval:
+                if hashstring(self._variables[name]) != var.hashval:
                     modified_vars.append(name)
-                    var.hashval = hash(self._variables[name])
+                    var.hashval = hashstring(self._variables[name])
                     var.strval = str(self._variables[name])
+                    var.save()
 
         for name in new_vars:
             var_model = monitor.Variable(
                 build=monitor.build_model,
                 name=name,
-                hashval=hash(self._variables[name]),
+                hashval=hashstring(self._variables[name]),
                 strval=str(self._variables[name]),
             )
             var_model.save()
