@@ -56,8 +56,8 @@ Variable changed:
 
   steps:
   - Run code: |
-      Thing(".", "1").with_build_path(".").ensure_built()
-      Thing(".", "1").with_build_path(".").ensure_built()
+      Thing(".", ["1", "2", ]).with_build_path(".").ensure_built()
+      Thing(".", ["1", "2", ]).with_build_path(".").ensure_built()
 
   - File contents will be:
       filename: thing.txt
@@ -68,7 +68,7 @@ Variable changed:
         vars changed: 
 
   - Run code: |
-      Thing(".", "2").with_build_path(".").ensure_built()
+      Thing(".", ["1", "2", "3",]).with_build_path(".").ensure_built()
 
   - File contents will be:
       filename: thing.txt
@@ -81,7 +81,7 @@ Variable changed:
         vars changed: var
         
   - Run code: |
-      Thing(".", "2").with_build_path(".").ensure_built()
+      Thing(".", ["1", "2", "3",]).with_build_path(".").ensure_built()
       
   - File contents will be:
       filename: thing.txt

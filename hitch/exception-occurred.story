@@ -15,9 +15,6 @@ Exception occurred during build:
           def thingpath(self):
               return self.build_path/"thing.txt"
 
-          def trigger(self):
-              return self.monitor.non_existent(self.thingpath)
-
           def build(self):
               self.thingpath.write_text("oneline\n", append=True)
 

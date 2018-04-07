@@ -11,9 +11,8 @@ File changed:
       sourcefile2.txt: |
         file that, if changed, should trigger a rebuild
     setup: |
-      import hitchbuild
       from pathquery import pathquery
-      import hashlib
+      import hitchbuild
 
       class Thing(hitchbuild.HitchBuild):
           def __init__(self, src_dir):
@@ -31,7 +30,7 @@ File changed:
               return self.build_path/"thing.txt"
 
           def fingerprint(self):
-              return hashlib.sha1(self.thingpath.bytes()).hexdigest()
+              return self.thingpath.text()
 
           def build(self):
               self.thingpath.write_text("build triggered\n", append=True)

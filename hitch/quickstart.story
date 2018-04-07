@@ -12,7 +12,6 @@ Quickstart:
   given:
     setup: |
       import hitchbuild
-      import hashlib
 
       class Thing(hitchbuild.HitchBuild):
           def __init__(self):
@@ -23,7 +22,7 @@ Quickstart:
               return self.build_path/"thing.txt"
           
           def fingerprint(self):
-              return hashlib.sha1(self.thingpath.bytes()).hexdigest()
+              return self.thingpath.text()
       
           def build(self):
               self.thingpath.write_text("text")

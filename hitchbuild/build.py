@@ -1,7 +1,7 @@
 from hitchbuild.monitor import Monitor
 from hitchbuild.condition import Always
 from hitchbuild import exceptions
-from hitchbuild.utils import hashstring
+from hitchbuild.utils import hash_json_struct
 from path import Path
 from copy import copy
 
@@ -157,9 +157,9 @@ class MonitoredVars(Watcher):
             name = var.name
             del new_vars[name]
             if name in self._variables.keys():
-                if hashstring(self._variables[name]) != var.hashval:
+                if hash_json_struct(self._variables[name]) != var.hashval:
                     modified_vars.append(name)
-                    var.hashval = hashstring(self._variables[name])
+                    var.hashval = hash_json_struct(self._variables[name])
                     var.strval = str(self._variables[name])
                     var.save()
 
@@ -167,7 +167,7 @@ class MonitoredVars(Watcher):
             var_model = monitor.Variable(
                 build=monitor.build_model,
                 name=name,
-                hashval=hashstring(self._variables[name]),
+                hashval=hash_json_struct(self._variables[name]),
                 strval=str(self._variables[name]),
             )
             var_model.save()
@@ -280,7 +280,7 @@ class HitchBuild(object):
         with self.monitor.context_manager():
             self.build()
 
-        new_fingerprint = self.fingerprint()
+        new_fingerprint = hash_json_struct(self.fingerprint())
 
         assert isinstance(new_fingerprint, str), \
             "{0} is not a string".format(new_fingerprint)
