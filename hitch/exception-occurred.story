@@ -16,6 +16,10 @@ Exception occurred during build:
               return self.build_path/"thing.txt"
 
           def build(self):
+              self.thingpath.write_text(
+                  "last run had exception: {}\n".format(self.last_run_had_exception),
+                  append=True
+              )
               self.thingpath.write_text("oneline\n", append=True)
 
               raise Exception("build had an error")
@@ -30,6 +34,7 @@ Exception occurred during build:
   - File contents will be:
       filename: thing.txt
       text: |
+        last run had exception: False
         oneline
 
   - Run code:
@@ -42,5 +47,7 @@ Exception occurred during build:
   - File contents will be:
       filename: thing.txt
       text: |
+        last run had exception: False
         oneline
+        last run had exception: True
         oneline

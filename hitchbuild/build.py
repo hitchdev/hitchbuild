@@ -195,6 +195,10 @@ class HitchBuild(object):
         return Always()
 
     @property
+    def last_run_had_exception(self):
+        return self.monitor.last_run_had_exception
+
+    @property
     def monitor(self):
         return Monitor(self.name, self.build_database)
 
