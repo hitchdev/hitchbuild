@@ -50,17 +50,25 @@ class Monitor(object):
             hashval = CharField(max_length=1024)
             strval = CharField(max_length=1024)
 
+        class Dependency(BaseModel):
+            build = ForeignKeyField(Build)
+            name = CharField(max_length=128)
+            last_fingerprint = CharField(null=True)
+
         if not Build.table_exists():
             Build.create_table()
         if not File.table_exists():
             File.create_table()
         if not Variable.table_exists():
             Variable.create_table()
+        if not Dependency.table_exists():
+            Dependency.create_table()
 
         self.BaseModel = BaseModel
         self.File = File
         self.Build = Build
         self.Variable = Variable
+        self.Dependency = Dependency
 
     @property
     def build_model(self):

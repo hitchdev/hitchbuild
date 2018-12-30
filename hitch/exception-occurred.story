@@ -8,12 +8,17 @@ Exception occurred during build:
       sourcefile.txt: |
         file that, if changed, should trigger a rebuild
     setup: |
+      from path import Path
       import hitchbuild
 
       class Thing(hitchbuild.HitchBuild):
+          def __init__(self, build_path):
+              self._build_path = Path(build_path).abspath()
+              self.build_database = self._build_path / "builddb.sqlite"
+
           @property
           def thingpath(self):
-              return self.build_path/"thing.txt"
+              return self.build_path / "thing.txt"
 
           def build(self):
               self.thingpath.write_text(
@@ -26,7 +31,7 @@ Exception occurred during build:
   steps:
   - Run code:
       code: |
-        Thing().with_build_path(".").ensure_built()
+        Thing(".").ensure_built()
       raises:
         type: builtins.Exception
         message: build had an error
@@ -39,7 +44,7 @@ Exception occurred during build:
 
   - Run code:
       code: |
-        Thing().with_build_path(".").ensure_built()
+        Thing(".").ensure_built()
       raises:
         type: builtins.Exception
         message: build had an error

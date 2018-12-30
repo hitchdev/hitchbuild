@@ -108,7 +108,32 @@ class Rebuilt(Condition):
         self._build = build
 
     def check(self):
-        return self._monitor.model_for(self._build).was_triggered_on_last_run
+        monitor = self._monitor
+        dependency_model = monitor.Dependency\
+                                  .filter(
+                                      build=monitor.build_model,
+                                      name=self._build.name
+                                  ).first()
+
+        current_fingerprint = monitor.Build.filter(name=self._build.name).first().fingerprint
+
+        if dependency_model is None:
+            dependency_model = monitor.Dependency(
+                build=monitor.build_model,
+                name=self._build.name,
+                last_fingerprint=current_fingerprint,
+            )
+            dependency_model.save()
+            return YesChange("Dependency never built before")
+        else:
+            changes = YesChange("Dependency rebuilt") \
+                if current_fingerprint != dependency_model.last_fingerprint \
+                else NoChange()
+
+            dependency_model.last_fingerprint = current_fingerprint
+            dependency_model.name = self._build.name
+            dependency_model.save()
+            return changes
 
 
 class NonExistent(Condition):

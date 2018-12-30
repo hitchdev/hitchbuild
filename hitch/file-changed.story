@@ -12,25 +12,25 @@ File changed:
         file that, if changed, should trigger a rebuild
     setup: |
       from pathquery import pathquery
+      from path import Path
       import hitchbuild
 
       class Thing(hitchbuild.HitchBuild):
-          def __init__(self, src_dir):
+          def __init__(self, build_dir):
+              self._build_dir = build_dir
               self._src1 = self.from_source(
                   "firstsource",
-                  pathquery(src_dir).named("sourcefile1.txt"),
+                  pathquery(build_dir).named("sourcefile1.txt"),
               )
               self._src2 = self.from_source(
                   "secondsource",
-                  pathquery(src_dir).named("sourcefile1.txt"),
+                  pathquery(build_dir).named("sourcefile1.txt"),
               )
-          
+              self.build_database = build_dir / "builddb.sqlite"
+
           @property
           def thingpath(self):
-              return self.build_path/"thing.txt"
-
-          def fingerprint(self):
-              return self.thingpath.text()
+              return self._build_dir / "thing.txt"
 
           def build(self):
               self.thingpath.write_text("build triggered\n", append=True)
@@ -50,9 +50,8 @@ File changed:
                   str("sourcefile2.txt" in self._src2.changes) + '\n',
                   append=True,
               )
-              
 
-      build = Thing(src_dir=".").with_build_path(".")
+      build = Thing(build_dir=Path("."))
   steps:
   - Run code: |
       build.ensure_built()

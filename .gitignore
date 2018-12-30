@@ -2,3 +2,5 @@ hitch/gen
 __pycache__
 dist
 hitchbuild.egg-info/
+
+*.kate-swp

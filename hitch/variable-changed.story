@@ -29,8 +29,10 @@ Variable changed:
       import hitchbuild
 
       class Thing(hitchbuild.HitchBuild):
-          def __init__(self, src_dir, variable_value):
+          def __init__(self, src_dir, build_dir, variable_value):
               self._src_dir = Path(src_dir)
+              self._build_dir = Path(build_dir)
+              self.build_database = build_dir / "builddb.sqlite"
               self._variable_value = variable_value
               self._var_contents = self.monitored_vars(
                   var=self._variable_value,
@@ -38,14 +40,11 @@ Variable changed:
 
           @property
           def srcfile(self):
-              return self._src_dir/"sourcefile.txt"
-
-          def fingerprint(self):
-              return self._variable_value
+              return self._src_dir / "sourcefile.txt"
 
           @property
           def thingpath(self):
-              return self.build_path/"thing.txt"
+              return self._build_dir / "thing.txt"
 
           def build(self):
               self.thingpath.write_text("build triggered\n", append=True)
@@ -56,8 +55,8 @@ Variable changed:
 
   steps:
   - Run code: |
-      Thing(".", ["1", "2", ]).with_build_path(".").ensure_built()
-      Thing(".", ["1", "2", ]).with_build_path(".").ensure_built()
+      Thing(Path("."), Path("."), ["1", "2", ]).ensure_built()
+      Thing(Path("."), Path("."), ["1", "2", ]).ensure_built()
 
   - File contents will be:
       filename: thing.txt
@@ -68,7 +67,7 @@ Variable changed:
         vars changed: 
 
   - Run code: |
-      Thing(".", ["1", "2", "3",]).with_build_path(".").ensure_built()
+      Thing(Path("."), Path("."), ["1", "2", "3",]).ensure_built()
 
   - File contents will be:
       filename: thing.txt
@@ -81,7 +80,7 @@ Variable changed:
         vars changed: var
         
   - Run code: |
-      Thing(".", ["1", "2", "3",]).with_build_path(".").ensure_built()
+      Thing(Path("."), Path("."), ["1", "2", "3",]).ensure_built()
       
   - File contents will be:
       filename: thing.txt

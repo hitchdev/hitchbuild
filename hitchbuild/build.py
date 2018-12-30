@@ -4,6 +4,7 @@ from hitchbuild import exceptions
 from hitchbuild.utils import hash_json_struct
 from path import Path
 from copy import copy
+import uuid
 
 
 class Only(object):
@@ -107,6 +108,20 @@ class PathChanges(object):
         return False
 
 
+class DependencyChange(object):
+    def __init__(self, dependency_changed):
+        self._changed = dependency_changed
+
+    def changes(self):
+        return []
+
+    def __len__(self):
+        return len(self.changes())
+
+    def __getitem__(self, index):
+        return self.changes()[index]
+
+
 class Source(Watcher):
     def __init__(self, build, name, paths):
         self._build = build
@@ -175,6 +190,25 @@ class MonitoredVars(Watcher):
         self.changes = VarChanges(list(new_vars.keys()), modified_vars)
 
 
+class Dependency(object):
+    def __init__(self, parent, child):
+        self._parent = parent
+        self._child = child
+
+    @property
+    def build(self):
+        return self._child
+
+    def name(self):
+        return self._child.name
+
+    def ensure_built(self):
+        self.build.ensure_built()
+
+    def rebuilt(self):
+        return self._parent.monitor.rebuilt(self._child).check()
+
+
 class HitchBuild(object):
     def __init__(self):
         pass
@@ -238,19 +272,8 @@ class HitchBuild(object):
         new_build._sqlite_filename = sqlite_filename
         return new_build
 
-    @property
-    def build_database(self):
-        if hasattr(self, '_sqlite_filename'):
-            return self._sqlite_filename
-        else:
-            return self.build_path / "builddb.sqlite"
-
     def as_dependency(self, build):
-        if hasattr(self, '_dependencies'):
-            self._dependencies.append(build)
-        else:
-            self._dependencies = [build, ]
-        return build
+        return Dependency(self, build)
 
     def _add_watcher(self, watcher):
         if hasattr(self, '_watchers'):
@@ -268,32 +291,20 @@ class HitchBuild(object):
     def ensure_built(self):
         self._rebuilt = False
 
-        if hasattr(self, '_dependencies'):
-            for dependency in self._dependencies:
-                dependency._defaults_from = self
-                dependency.ensure_built()
-
         if hasattr(self, '_watchers'):
             for watcher in self._watchers:
                 watcher.prebuild(self.monitor)
 
-        model = self.monitor.build_model
-
-        previous_fingerprint = model.fingerprint
-
         with self.monitor.context_manager():
             self.build()
 
-        new_fingerprint = hash_json_struct(self.fingerprint())
-
-        assert isinstance(new_fingerprint, str), \
-            "{0} is not a string".format(new_fingerprint)
-        assert len(new_fingerprint) < 256, \
-            "{0} is too long, should be under 256 characters".format(new_fingerprint)
-
-        self._rebuilt = new_fingerprint != previous_fingerprint
+    def generate_new_fingerprint(self):
+        """
+        Let dependent builds know that this build has changed
+        and that they might need to rebuild.
+        """
         model = self.monitor.build_model
-        model.fingerprint = new_fingerprint
+        model.fingerprint = str(uuid.uuid1())
         model.save()
 
     def __repr__(self):
