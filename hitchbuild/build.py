@@ -4,6 +4,7 @@ from hitchbuild.utils import hash_json_struct
 from path import Path
 from copy import copy
 import uuid
+import json
 
 
 class Only(object):
@@ -189,26 +190,6 @@ class MonitoredVars(Watcher):
         self.changes = VarChanges(list(new_vars.keys()), modified_vars)
 
 
-#class Dependency(object):
-    #def __init__(self, parent, child):
-        #self._parent = parent
-        #self._child = child
-
-    #@property
-    #def build(self):
-        #return self._child
-
-    #def name(self):
-        #return self._child.name
-
-    #def ensure_built(self):
-        #self.build.ensure_built()
-
-    #def rebuilt(self):
-        #return self._parent.monitor.rebuilt(self._child).check()
-
-
-
 class Dependency(object):
     def __init__(self, parent, child):
         self._parent = parent
@@ -224,7 +205,6 @@ class Dependency(object):
         if expected_fingerprint is None or actual_fingerprint is None:
             return True
         return expected_fingerprint != actual_fingerprint
-
 
 
 class HitchBuild(object):
@@ -244,9 +224,6 @@ class HitchBuild(object):
     def fingerprint(self):
         assert hasattr(self, 'fingerprint_path'),\
             "fingerprint_path on object should be set"
-
-        import json
-        import random
 
         class Fingerprint(object):
             def __init__(self, build):
@@ -298,7 +275,6 @@ class HitchBuild(object):
 
         return NonExistent(path)
 
-
     def dependency(self, build):
         return Dependency(build, self)
 
@@ -319,15 +295,6 @@ class HitchBuild(object):
         new_build = copy(self)
         new_build._name = name
         return new_build
-
-    #@property
-    #def build_path(self):
-        #if hasattr(self, '_build_path'):
-            #return self._build_path
-        #elif hasattr(self, '_defaults_from'):
-            #return self._defaults_from.build_path
-        #else:
-            #raise Exception("No build path set")
 
     @property
     def name(self):
