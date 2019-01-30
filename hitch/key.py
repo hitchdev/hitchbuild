@@ -163,6 +163,9 @@ class Engine(BaseEngine):
             else:
                 raise
 
+    def file_does_not_exist(self, filename):
+        return not self.path.state.joinpath(filename).exists()
+
     @validate(seconds=Int())
     def sleep(self, seconds):
         import time

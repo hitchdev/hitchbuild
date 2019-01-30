@@ -20,10 +20,17 @@ Quickstart:
       class Thing(hitchbuild.HitchBuild):
           def __init__(self, dirs):
               self.dirs = dirs
-              self.build_database = dirs.gen / "builddb.sqlite"
+              self.trigger(self.nonexistent(self.thing))
+
+          @property
+          def thing(self):
+              return self.dirs.gen.joinpath("thing.txt")
 
           def build(self):
-              self.dirs.gen.joinpath("thing.txt").write_text("text")
+              self.thing.write_text("text")
+
+          def clean(self):
+              self.thing.remove()
   steps:
   - Run code: |
       Thing(dirs).ensure_built()
@@ -32,4 +39,7 @@ Quickstart:
       filename: thing.txt
       text: text
 
-  - File exists: builddb.sqlite
+  - Run code: |
+      Thing(dirs).clean()
+
+  - File does not exist: thing.txt

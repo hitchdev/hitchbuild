@@ -1,5 +1,4 @@
 from hitchbuild.monitor import Monitor
-from hitchbuild.condition import Always
 from hitchbuild import exceptions
 from hitchbuild.utils import hash_json_struct
 from path import Path
@@ -190,6 +189,26 @@ class MonitoredVars(Watcher):
         self.changes = VarChanges(list(new_vars.keys()), modified_vars)
 
 
+#class Dependency(object):
+    #def __init__(self, parent, child):
+        #self._parent = parent
+        #self._child = child
+
+    #@property
+    #def build(self):
+        #return self._child
+
+    #def name(self):
+        #return self._child.name
+
+    #def ensure_built(self):
+        #self.build.ensure_built()
+
+    #def rebuilt(self):
+        #return self._parent.monitor.rebuilt(self._child).check()
+
+
+
 class Dependency(object):
     def __init__(self, parent, child):
         self._parent = parent
@@ -197,16 +216,15 @@ class Dependency(object):
 
     @property
     def build(self):
-        return self._child
+        return self._parent
 
-    def name(self):
-        return self._child.name
+    def trigger(self):
+        expected_fingerprint = self._child.fingerprint.deps.get(self._parent.name)
+        actual_fingerprint = self._parent.fingerprint.get()
+        if expected_fingerprint is None or actual_fingerprint is None:
+            return True
+        return expected_fingerprint != actual_fingerprint
 
-    def ensure_built(self):
-        self.build.ensure_built()
-
-    def rebuilt(self):
-        return self._parent.monitor.rebuilt(self._child).check()
 
 
 class HitchBuild(object):
@@ -222,11 +240,72 @@ class HitchBuild(object):
     def build(self):
         raise NotImplementedError("build method must be implemented")
 
+    @property
     def fingerprint(self):
-        raise NotImplementedError("fingerprint method must be implemented")
+        assert hasattr(self, 'fingerprint_path'),\
+            "fingerprint_path on object should be set"
 
-    def trigger(self):
-        return Always()
+        import json
+        import random
+
+        class Fingerprint(object):
+            def __init__(self, build):
+                self._build = build
+
+            def file_json(self):
+                return json.loads(Path(self._build.fingerprint_path).text())
+
+            def exists(self):
+                return self._build.fingerprint_path.exists()
+
+            def get(self):
+                return self.file_json()['fingerprint'] if self.exists() else None
+
+            @property
+            def deps(self):
+                return self.file_json()['deps'] if self.exists() else {}
+
+            def new(self):
+                deps = {}
+
+                if hasattr(self._build, '_triggers'):
+                    for trigger, _ in self._build._triggers:
+                        if isinstance(trigger, Dependency):
+                            deps[trigger._parent.name] = trigger._parent.fingerprint.get()
+
+                if not self.exists():
+                    self._build.fingerprint_path.write_text(
+                        json.dumps({
+                            "fingerprint": str(uuid.uuid1()),
+                            "deps": deps,
+                        })
+                    )
+                else:
+                    new_json = self.file_json()
+                    new_json['fingerprint'] = str(uuid.uuid1())
+                    new_json['deps'] = deps
+                    self._build.fingerprint_path.write_text(json.dumps(new_json))
+
+        return Fingerprint(self)
+
+    def nonexistent(self, path):
+        class NonExistent(object):
+            def __init__(self, path):
+                self._path = path
+
+            def trigger(self):
+                return not self._path.exists()
+
+        return NonExistent(path)
+
+
+    def dependency(self, build):
+        return Dependency(build, self)
+
+    def trigger(self, trigger_object):
+        if not hasattr(self, '_triggers'):
+            self._triggers = []
+        self._triggers.append((trigger_object, self.build))
 
     @property
     def last_run_had_exception(self):
@@ -241,14 +320,14 @@ class HitchBuild(object):
         new_build._name = name
         return new_build
 
-    @property
-    def build_path(self):
-        if hasattr(self, '_build_path'):
-            return self._build_path
-        elif hasattr(self, '_defaults_from'):
-            return self._defaults_from.build_path
-        else:
-            raise Exception("No build path set")
+    #@property
+    #def build_path(self):
+        #if hasattr(self, '_build_path'):
+            #return self._build_path
+        #elif hasattr(self, '_defaults_from'):
+            #return self._defaults_from.build_path
+        #else:
+            #raise Exception("No build path set")
 
     @property
     def name(self):
@@ -289,14 +368,26 @@ class HitchBuild(object):
             return False
 
     def ensure_built(self):
-        self._rebuilt = False
+        class BuildContextManager(object):
+            def __init__(self, build):
+                self._build = build
 
-        if hasattr(self, '_watchers'):
-            for watcher in self._watchers:
-                watcher.prebuild(self.monitor)
+            def __enter__(self):
+                pass
 
-        with self.monitor.context_manager():
-            self.build()
+            def __exit__(self, type, value, traceback):
+                if value is None:
+                    self._build.fingerprint.new()
+
+        if hasattr(self, '_triggers'):
+            methods = []
+            for trigger, method in self._triggers:
+                if trigger.trigger():
+                    if method not in methods:
+                        methods.append(method)
+            for method in methods:
+                with BuildContextManager(self):
+                    method()
 
     def generate_new_fingerprint(self):
         """
