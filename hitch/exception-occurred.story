@@ -14,24 +14,20 @@ Exception occurred during build:
       class Thing(hitchbuild.HitchBuild):
           def __init__(self, build_path):
               self._build_path = Path(build_path).abspath()
-              self.build_database = self._build_path / "builddb.sqlite"
-
-          @property
-          def thingpath(self):
-              return self.build_path / "thing.txt"
+              self.trigger(self.nonexistent(self._build_path / "fingerprint.txt"))
+              self.fingerprint_path = self._build_path / "fingerprint.txt"
 
           def build(self):
-              self.thingpath.write_text(
-                  "last run had exception: {}\n".format(self.last_run_had_exception),
-                  append=True
-              )
-              self.thingpath.write_text("oneline\n", append=True)
+              if self._build_path.exists():
+                  self._build_path.rmtree()
+              self._build_path.mkdir()
+              self._build_path.joinpath("..", "thing.txt").write_text("building\n", append=True)
 
               raise Exception("build had an error")
   steps:
   - Run code:
       code: |
-        Thing(".").ensure_built()
+        Thing("thing").ensure_built()
       raises:
         type: builtins.Exception
         message: build had an error
@@ -39,12 +35,11 @@ Exception occurred during build:
   - File contents will be:
       filename: thing.txt
       text: |
-        last run had exception: False
-        oneline
+        building
 
   - Run code:
       code: |
-        Thing(".").ensure_built()
+        Thing("thing").ensure_built()
       raises:
         type: builtins.Exception
         message: build had an error
@@ -52,7 +47,5 @@ Exception occurred during build:
   - File contents will be:
       filename: thing.txt
       text: |
-        last run had exception: False
-        oneline
-        last run had exception: True
-        oneline
+        building
+        building
