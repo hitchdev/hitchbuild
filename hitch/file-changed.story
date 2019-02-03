@@ -6,93 +6,58 @@ File changed:
     changed since the build was last run.
   given:
     files:
-      sourcefile1.txt: |
-        file that, if changed, should trigger a rebuild
-      sourcefile2.txt: |
+      requirements.txt: |
         file that, if changed, should trigger a rebuild
     setup: |
       from pathquery import pathquery
       from path import Path
       import hitchbuild
 
-      class Thing(hitchbuild.HitchBuild):
-          def __init__(self, build_dir):
-              self._build_dir = build_dir
-              self._src1 = self.from_source(
-                  "firstsource",
-                  pathquery(build_dir).named("sourcefile1.txt"),
-              )
-              self._src2 = self.from_source(
-                  "secondsource",
-                  pathquery(build_dir).named("sourcefile1.txt"),
-              )
-              self.build_database = build_dir / "builddb.sqlite"
 
-          @property
-          def thingpath(self):
-              return self._build_dir / "thing.txt"
+      class PythonPackage(hitchbuild.HitchBuild):
+          def __init__(self, src_dir, build_dir):
+              self._src_dir = Path(src_dir).abspath()
+              self._build_dir = Path(build_dir).abspath()
+              self.fingerprint_path = self._build_dir / "fingerprint.txt"
+              self.trigger(self.nonexistent(self._build_dir / "fingerprint.txt"))
+              self._reqs = self.source("reqs", self._src_dir / "requirements.txt")
+              self.trigger(self.on_change(self._reqs), self.installreqs)
+
+
+          def log(self, message):
+              self._build_dir.joinpath("..", "log.txt").write_text(message + '\n', append=True)
+
+          def installreqs(self):
+              self.log("pip install -r requirements.txt")
 
           def build(self):
-              self.thingpath.write_text("build triggered\n", append=True)
-              self.thingpath.write_text(
-                  "files changed: {0}\n".format(', '.join(self._src1.changes)),
-                  append=True,
-              )
-              self.thingpath.write_text(
-                  str("sourcefile1.txt" in self._src1.changes) + '\n',
-                  append=True,
-              )
-              self.thingpath.write_text(
-                  "files changed: {0}\n".format(', '.join(self._src2.changes)),
-                  append=True,
-              )
-              self.thingpath.write_text(
-                  str("sourcefile2.txt" in self._src2.changes) + '\n',
-                  append=True,
-              )
+              if self._build_dir.exists():
+                  self._build_dir.rmtree()
+              self._build_dir.mkdir()
+              self.log("create virtualenv")
 
-      build = Thing(build_dir=Path("."))
+      python_package = PythonPackage(src_dir=".", build_dir="package")
   steps:
   - Run code: |
-      build.ensure_built()
-      build.ensure_built()
+      python_package.ensure_built()
+      python_package.ensure_built()
 
   - File contents will be:
-      filename: thing.txt
+      filename: log.txt
       text: |
-        build triggered
-        files changed: /path/to/sourcefile1.txt
-        True
-        files changed: /path/to/sourcefile1.txt
-        True
-        build triggered
-        files changed: 
-        False
-        files changed: 
-        False
+        create virtualenv
+        pip install -r requirements.txt
 
-  - Sleep: 1 
+  - Sleep: 1
 
-  - Touch file: sourcefile.txt
+  - Touch file: requirements.txt
 
   - Run code: |
-      build.ensure_built()
+      python_package.ensure_built()
 
   - File contents will be:
-      filename: thing.txt
-      text: |-
-        build triggered
-        files changed: /path/to/sourcefile1.txt
-        True
-        files changed: /path/to/sourcefile1.txt
-        True
-        build triggered
-        files changed: 
-        False
-        files changed: 
-        False
-        build triggered
-        files changed: 
-        False
-        files changed: 
-        False
+      filename: log.txt
+      text: |
+        create virtualenv
+        pip install -r requirements.txt
+        pip install -r requirements.txt

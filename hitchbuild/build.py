@@ -207,6 +207,103 @@ class Dependency(object):
         return expected_fingerprint != actual_fingerprint
 
 
+
+class NonExistent(object):
+    def __init__(self, path):
+        self._path = path
+
+    def trigger(self):
+        return not self._path.exists()
+
+
+class Fingerprint(object):
+    def __init__(self, build):
+        self._build = build
+
+    def file_json(self):
+        return json.loads(Path(self._build.fingerprint_path).text())
+
+    def exists(self):
+        return self._build.fingerprint_path.exists()
+
+    def get(self):
+        return self.file_json()['fingerprint'] if self.exists() else None
+
+    @property
+    def deps(self):
+        return self.file_json()['deps'] if self.exists() else {}
+
+    def new(self):
+        deps = {}
+        sources = {}
+
+        if hasattr(self._build, '_triggers'):
+            for trigger, _ in self._build._triggers:
+                if isinstance(trigger, Dependency):
+                    deps[trigger._parent.name] = trigger._parent.fingerprint.get()
+
+        if hasattr(self._build, '_sources'):
+            for source in self._build._sources:
+                sources[source.name] = source.timestamp()
+
+        if not self.exists():
+            self._build.fingerprint_path.write_text(
+                json.dumps({
+                    "fingerprint": str(uuid.uuid1()),
+                    "deps": deps,
+                    "sources": sources,
+                })
+            )
+        else:
+            new_json = self.file_json()
+            new_json['fingerprint'] = str(uuid.uuid1())
+            new_json['deps'] = deps
+            new_json['sources'] = sources
+            self._build.fingerprint_path.write_text(json.dumps(new_json))
+
+
+
+class FilesChanged(object):
+    def __init__(self, build, paths):
+        self._build = build
+        self._paths = paths
+
+    def file_json(self):
+        return json.loads(Path(self._build.fingerprint_path).text())
+
+    def trigger(self):
+        return True
+
+
+
+class Source(object):
+    def __init__(self, build, name, paths):
+        self._build = build
+        self._name = name
+        self._paths = paths
+
+    @property
+    def name(self):
+        return self._name
+
+    def changed(self):
+        from os.path import getmtime
+        json = self._build.fingerprint.file_json() if \
+            self._build.fingerprint.exists() else {}
+        paths = json.get('sources', {}).get(self._name, {})
+
+        for path in self._paths:
+            if paths.get(path) != getmtime(path):
+                return True
+        return False
+
+    def timestamp(self):
+        from os.path import getmtime
+        paths = {}
+        for path in self._paths:
+            paths[path] = getmtime(path)
+        return paths
+
 class HitchBuild(object):
     def __init__(self):
         pass
@@ -224,64 +321,31 @@ class HitchBuild(object):
     def fingerprint(self):
         assert hasattr(self, 'fingerprint_path'),\
             "fingerprint_path on object should be set"
-
-        class Fingerprint(object):
-            def __init__(self, build):
-                self._build = build
-
-            def file_json(self):
-                return json.loads(Path(self._build.fingerprint_path).text())
-
-            def exists(self):
-                return self._build.fingerprint_path.exists()
-
-            def get(self):
-                return self.file_json()['fingerprint'] if self.exists() else None
-
-            @property
-            def deps(self):
-                return self.file_json()['deps'] if self.exists() else {}
-
-            def new(self):
-                deps = {}
-
-                if hasattr(self._build, '_triggers'):
-                    for trigger, _ in self._build._triggers:
-                        if isinstance(trigger, Dependency):
-                            deps[trigger._parent.name] = trigger._parent.fingerprint.get()
-
-                if not self.exists():
-                    self._build.fingerprint_path.write_text(
-                        json.dumps({
-                            "fingerprint": str(uuid.uuid1()),
-                            "deps": deps,
-                        })
-                    )
-                else:
-                    new_json = self.file_json()
-                    new_json['fingerprint'] = str(uuid.uuid1())
-                    new_json['deps'] = deps
-                    self._build.fingerprint_path.write_text(json.dumps(new_json))
-
         return Fingerprint(self)
 
     def nonexistent(self, path):
-        class NonExistent(object):
-            def __init__(self, path):
-                self._path = path
-
-            def trigger(self):
-                return not self._path.exists()
-
         return NonExistent(path)
+
+    def fileschanged(self, *paths):
+        return FilesChanged(self, paths)
 
     def dependency(self, build):
         return Dependency(build, self)
 
-    def trigger(self, trigger_object):
+    def source(self, name, *paths):
+
+        if not hasattr(self, '_sources'):
+            self._sources = []
+
+        new_source = Source(self, name, paths)
+        self._sources.append(new_source)
+
+        return new_source
+
+    def trigger(self, trigger_object, method=None):
         if not hasattr(self, '_triggers'):
             self._triggers = []
-        self._triggers.append((trigger_object, self.build))
+        self._triggers.append((trigger_object, self.build if method is None else method))
 
     @property
     def last_run_had_exception(self):
@@ -303,23 +367,19 @@ class HitchBuild(object):
         else:
             return type(self).__name__
 
-    def with_build_path(self, path):
-        new_build = copy(self)
-        new_build._build_path = Path(path).abspath()
-
-        if not new_build._build_path.exists():
-            raise exceptions.BuildPathNonexistent(
-                new_build._build_path.abspath()
-            )
-        return new_build
-
-    def with_db(self, sqlite_filename):
-        new_build = copy(self)
-        new_build._sqlite_filename = sqlite_filename
-        return new_build
-
     def as_dependency(self, build):
         return Dependency(self, build)
+
+    def on_change(self, source):
+        class FileChange(object):
+            def __init__(self, build, source):
+                self._build = build
+                self._source = source
+
+            def trigger(self):
+                return self._source.changed()
+
+        return FileChange(self, source)
 
     def _add_watcher(self, watcher):
         if hasattr(self, '_watchers'):
@@ -343,6 +403,9 @@ class HitchBuild(object):
                 pass
 
             def __exit__(self, type, value, traceback):
+                if hasattr(self._build, '_sources'):
+                    for source in self._build._sources:
+                        source.timestamp()
                 if value is None:
                     self._build.fingerprint.new()
 
