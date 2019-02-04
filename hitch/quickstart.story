@@ -13,33 +13,34 @@ Quickstart:
     setup: |
       import hitchbuild
       from path import Path
-      from collections import namedtuple
-
-      dirs = namedtuple('PathGroup', ['gen',])(gen=Path("."))
 
       class Thing(hitchbuild.HitchBuild):
-          def __init__(self, dirs):
-              self.dirs = dirs
+          def __init__(self, build_dir):
+              self._build_dir = Path(build_dir).abspath()
+              self.fingerprint_path = self._build_dir / "fingerprint.txt"
               self.trigger(self.nonexistent(self.thing))
 
           @property
           def thing(self):
-              return self.dirs.gen.joinpath("thing.txt")
+              return self._build_dir / "thing.txt"
 
           def build(self):
+              self.clean()
+              self._build_dir.mkdir()
               self.thing.write_text("text")
 
           def clean(self):
-              self.thing.remove()
+              if self._build_dir.exists():
+                  self._build_dir.rmtree()
   steps:
   - Run code: |
-      Thing(dirs).ensure_built()
+      Thing("gen").ensure_built()
 
   - File contents will be:
-      filename: thing.txt
+      filename: gen/thing.txt
       text: text
 
   - Run code: |
-      Thing(dirs).clean()
+      Thing("gen").clean()
 
   - File does not exist: thing.txt
