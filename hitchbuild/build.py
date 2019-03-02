@@ -1,5 +1,4 @@
 from path import Path
-from copy import copy
 import uuid
 import json
 
@@ -81,6 +80,15 @@ class Fingerprint(object):
             new_json["sources"] = sources
             new_json["variables"] = variables
             self._build.fingerprint_path.write_text(json.dumps(new_json))
+
+
+class FileChange(object):
+    def __init__(self, build, source):
+        self._build = build
+        self._source = source
+
+    def trigger(self):
+        return self._source.changed()
 
 
 class FilesChanged(object):
@@ -190,11 +198,6 @@ class HitchBuild(object):
             (trigger_object, self.build if method is None else method)
         )
 
-    def with_name(self, name):
-        new_build = copy(self)
-        new_build._name = name
-        return new_build
-
     @property
     def name(self):
         if hasattr(self, "_name"):
@@ -206,31 +209,10 @@ class HitchBuild(object):
         return Dependency(self, build)
 
     def on_change(self, source):
-        class FileChange(object):
-            def __init__(self, build, source):
-                self._build = build
-                self._source = source
-
-            def trigger(self):
-                return self._source.changed()
-
         return FileChange(self, source)
 
     def vars_changed(self, **variables):
         return VarsChange(self, variables)
-
-    def _add_watcher(self, watcher):
-        if hasattr(self, "_watchers"):
-            self._watchers.append(watcher)
-        else:
-            self._watchers = [watcher]
-
-    @property
-    def rebuilt(self):
-        if hasattr(self, "_rebuilt"):
-            return self._rebuilt
-        else:
-            return False
 
     def ensure_built(self):
         class BuildContextManager(object):
