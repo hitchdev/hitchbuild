@@ -68,7 +68,6 @@ Variable changed:
       text: |
         pip install ipython
         pip install ipdb
-            
 
   - Run code: |
       Virtualenv("src", "build", ["ipython", "ipdb", "q",]).ensure_built()
@@ -81,7 +80,6 @@ Variable changed:
         pip install ipython
         pip install ipdb
         pip install q
-            
 
   - Run code: |
       Virtualenv("src", "build", ["ipython", "ipdb", "q",]).ensure_built()
