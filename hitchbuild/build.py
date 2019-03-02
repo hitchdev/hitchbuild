@@ -40,38 +40,46 @@ class Fingerprint(object):
         return self._build.fingerprint_path.exists()
 
     def get(self):
-        return self.file_json()['fingerprint'] if self.exists() else None
+        return self.file_json()["fingerprint"] if self.exists() else None
 
     @property
     def deps(self):
-        return self.file_json()['deps'] if self.exists() else {}
+        return self.file_json()["deps"] if self.exists() else {}
 
     def new(self):
         deps = {}
         sources = {}
+        variables = {}
 
-        if hasattr(self._build, '_triggers'):
+        if hasattr(self._build, "_triggers"):
             for trigger, _ in self._build._triggers:
                 if isinstance(trigger, Dependency):
                     deps[trigger._parent.name] = trigger._parent.fingerprint.get()
+                if isinstance(trigger, VarsChange):
+                    for name, value in trigger.variables.items():
+                        variables[name] = value
 
-        if hasattr(self._build, '_sources'):
+        if hasattr(self._build, "_sources"):
             for source in self._build._sources:
                 sources[source.name] = source.timestamp()
 
         if not self.exists():
             self._build.fingerprint_path.write_text(
-                json.dumps({
-                    "fingerprint": str(uuid.uuid1()),
-                    "deps": deps,
-                    "sources": sources,
-                })
+                json.dumps(
+                    {
+                        "fingerprint": str(uuid.uuid1()),
+                        "deps": deps,
+                        "sources": sources,
+                        "variables": variables,
+                    }
+                )
             )
         else:
             new_json = self.file_json()
-            new_json['fingerprint'] = str(uuid.uuid1())
-            new_json['deps'] = deps
-            new_json['sources'] = sources
+            new_json["fingerprint"] = str(uuid.uuid1())
+            new_json["deps"] = deps
+            new_json["sources"] = sources
+            new_json["variables"] = variables
             self._build.fingerprint_path.write_text(json.dumps(new_json))
 
 
@@ -99,9 +107,13 @@ class Source(object):
 
     def changed(self):
         from os.path import getmtime
-        json = self._build.fingerprint.file_json() if \
-            self._build.fingerprint.exists() else {}
-        paths = json.get('sources', {}).get(self._name, {})
+
+        json = (
+            self._build.fingerprint.file_json()
+            if self._build.fingerprint.exists()
+            else {}
+        )
+        paths = json.get("sources", {}).get(self._name, {})
 
         for path in self._paths:
             if paths.get(path) != getmtime(path):
@@ -110,10 +122,36 @@ class Source(object):
 
     def timestamp(self):
         from os.path import getmtime
+
         paths = {}
         for path in self._paths:
             paths[path] = getmtime(path)
         return paths
+
+
+class VarsChange(object):
+    def __init__(self, build, variables):
+        self._build = build
+        self.variables = variables
+
+    def trigger(self):
+        json = (
+            self._build.fingerprint.file_json()
+            if self._build.fingerprint.exists()
+            else {}
+        )
+        existing_vars = json.get("variables", {})
+
+        changed_vars = list(
+            set(existing_vars.keys()).symmetric_difference(set(self.variables.keys()))
+        )
+
+        for existing_var in existing_vars.keys():
+            if existing_var in self.variables.keys():
+                if existing_vars[existing_var] != self.variables[existing_var]:
+                    changed_vars.append(existing_var)
+
+        return changed_vars
 
 
 class HitchBuild(object):
@@ -125,21 +163,19 @@ class HitchBuild(object):
 
     @property
     def fingerprint(self):
-        assert hasattr(self, 'fingerprint_path'),\
-            "fingerprint_path on object should be set"
+        assert hasattr(
+            self, "fingerprint_path"
+        ), "fingerprint_path on object should be set"
         return Fingerprint(self)
 
     def nonexistent(self, path):
         return NonExistent(path)
 
-    def fileschanged(self, *paths):
-        return FilesChanged(self, paths)
-
     def dependency(self, build):
         return Dependency(build, self)
 
     def source(self, name, *paths):
-        if not hasattr(self, '_sources'):
+        if not hasattr(self, "_sources"):
             self._sources = []
 
         new_source = Source(self, name, paths)
@@ -148,9 +184,11 @@ class HitchBuild(object):
         return new_source
 
     def trigger(self, trigger_object, method=None):
-        if not hasattr(self, '_triggers'):
+        if not hasattr(self, "_triggers"):
             self._triggers = []
-        self._triggers.append((trigger_object, self.build if method is None else method))
+        self._triggers.append(
+            (trigger_object, self.build if method is None else method)
+        )
 
     def with_name(self, name):
         new_build = copy(self)
@@ -159,7 +197,7 @@ class HitchBuild(object):
 
     @property
     def name(self):
-        if hasattr(self, '_name'):
+        if hasattr(self, "_name"):
             return self._name
         else:
             return type(self).__name__
@@ -178,15 +216,18 @@ class HitchBuild(object):
 
         return FileChange(self, source)
 
+    def vars_changed(self, **variables):
+        return VarsChange(self, variables)
+
     def _add_watcher(self, watcher):
-        if hasattr(self, '_watchers'):
+        if hasattr(self, "_watchers"):
             self._watchers.append(watcher)
         else:
-            self._watchers = [watcher, ]
+            self._watchers = [watcher]
 
     @property
     def rebuilt(self):
-        if hasattr(self, '_rebuilt'):
+        if hasattr(self, "_rebuilt"):
             return self._rebuilt
         else:
             return False
@@ -200,13 +241,13 @@ class HitchBuild(object):
                 pass
 
             def __exit__(self, type, value, traceback):
-                if hasattr(self._build, '_sources'):
+                if hasattr(self._build, "_sources"):
                     for source in self._build._sources:
                         source.timestamp()
                 if value is None:
                     self._build.fingerprint.new()
 
-        if hasattr(self, '_triggers'):
+        if hasattr(self, "_triggers"):
             methods = []
             for trigger, method in self._triggers:
                 if trigger.trigger():

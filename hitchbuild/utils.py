@@ -3,6 +3,10 @@ import json
 
 
 def hash_json_struct(struct):
+    """
+    Deterministic hash of combinations of dict, list,
+    float, int and bool.
+    """
     return hashlib.md5(
         json.dumps(
             struct,

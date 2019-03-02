@@ -2,20 +2,18 @@ Variable changed:
   based on: HitchBuild
   description: |
     Using HitchBuild you can feed an arbitrary variable into the
-    build system and use it to determine whether or not to rebuild
-    as well as how to rebuild.
-    
+    build system and use it to determine whether or not to rebuild.
+
     Some examples:
-    
-    - Building python virtualenv with a list of packages (all variables).
+
+    - Building python virtualenv with a list of packages (variable).
     - A version for the build itself (trigger a rebuild if the code has changed).
-    
+
     HitchBuild will hash any variable it is passed to determine if it
-    has changed. Any of the following or a combination
-    are acceptable values - no other values are acceptable:
-    
-    * List
+    has changed. Any of the following types or a combination can be used -
+
     * Dict
+    * List
     * String
     * Float
     * Integer
@@ -28,68 +26,71 @@ Variable changed:
       from path import Path
       import hitchbuild
 
-      class Thing(hitchbuild.HitchBuild):
-          def __init__(self, src_dir, build_dir, variable_value):
+      class Virtualenv(hitchbuild.HitchBuild):
+          def __init__(self, src_dir, build_dir, extra_packages):
               self._src_dir = Path(src_dir)
-              self._build_dir = Path(build_dir)
-              self.build_database = build_dir / "builddb.sqlite"
-              self._variable_value = variable_value
-              self._var_contents = self.monitored_vars(
-                  var=self._variable_value,
+              self._build_dir = Path(build_dir).abspath()
+              self._extra_packages = extra_packages
+              self.fingerprint_path = self._build_dir / "fingerprint.txt"
+              self.trigger(self.nonexistent(self.fingerprint_path))
+              self.trigger(
+                  self.vars_changed(extra_packages=extra_packages),
+                  self.pipinstall
               )
 
-          @property
-          def srcfile(self):
-              return self._src_dir / "sourcefile.txt"
+          def log(self, message):
+              self._build_dir.joinpath("..", "log.txt").write_text(message + '\n', append=True)
 
           @property
           def thingpath(self):
               return self._build_dir / "thing.txt"
 
+          def pipinstall(self):
+              for package in self._extra_packages:
+                  self.log("pip install {}".format(package))
+
           def build(self):
-              self.thingpath.write_text("build triggered\n", append=True)
-              self.thingpath.write_text(
-                  "vars changed: {0}\n".format(', '.join(self._var_contents.changes)),
-                  append=True,
-              )
+              self.clean()
+              self._build_dir.mkdir()
+              self.thingpath.write_text("create virtualenv", append=True)
+
+          def clean(self):
+              if self._build_dir.exists():
+                  self._build_dir.rmtree()
 
   steps:
   - Run code: |
-      Thing(Path("."), Path("."), ["1", "2", ]).ensure_built()
-      Thing(Path("."), Path("."), ["1", "2", ]).ensure_built()
+      Virtualenv("src", "build", ["ipython", "ipdb", ]).ensure_built()
+      Virtualenv("src", "build", ["ipython", "ipdb", ]).ensure_built()
 
   - File contents will be:
-      filename: thing.txt
+      filename: log.txt
       text: |
-        build triggered
-        vars changed: var
-        build triggered
-        vars changed: 
+        pip install ipython
+        pip install ipdb
+            
 
   - Run code: |
-      Thing(Path("."), Path("."), ["1", "2", "3",]).ensure_built()
+      Virtualenv("src", "build", ["ipython", "ipdb", "q",]).ensure_built()
 
   - File contents will be:
-      filename: thing.txt
-      text: |-
-        build triggered
-        vars changed: var
-        build triggered
-        vars changed: 
-        build triggered
-        vars changed: var
-        
+      filename: log.txt
+      text: |
+        pip install ipython
+        pip install ipdb
+        pip install ipython
+        pip install ipdb
+        pip install q
+            
+
   - Run code: |
-      Thing(Path("."), Path("."), ["1", "2", "3",]).ensure_built()
-      
+      Virtualenv("src", "build", ["ipython", "ipdb", "q",]).ensure_built()
+
   - File contents will be:
-      filename: thing.txt
-      text: |-
-        build triggered
-        vars changed: var
-        build triggered
-        vars changed: 
-        build triggered
-        vars changed: var
-        build triggered
-        vars changed: 
+      filename: log.txt
+      text: |
+        pip install ipython
+        pip install ipdb
+        pip install ipython
+        pip install ipdb
+        pip install q
