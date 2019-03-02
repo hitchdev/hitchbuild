@@ -14,7 +14,7 @@ File changed:
       import hitchbuild
 
 
-      class PythonPackage(hitchbuild.HitchBuild):
+      class Virtualenv(hitchbuild.HitchBuild):
           def __init__(self, src_dir, build_dir):
               self._src_dir = Path(src_dir).abspath()
               self._build_dir = Path(build_dir).abspath()
@@ -36,11 +36,11 @@ File changed:
               self._build_dir.mkdir()
               self.log("create virtualenv")
 
-      python_package = PythonPackage(src_dir=".", build_dir="package")
+      virtualenv = Virtualenv(src_dir=".", build_dir="package")
   steps:
   - Run code: |
-      python_package.ensure_built()
-      python_package.ensure_built()
+      virtualenv.ensure_built()
+      virtualenv.ensure_built()
 
   - File contents will be:
       filename: log.txt
@@ -53,7 +53,7 @@ File changed:
   - Touch file: requirements.txt
 
   - Run code: |
-      python_package.ensure_built()
+      virtualenv.ensure_built()
 
   - File contents will be:
       filename: log.txt
