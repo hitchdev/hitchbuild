@@ -70,7 +70,9 @@ class Fingerprint(object):
                         "deps": deps,
                         "sources": sources,
                         "variables": variables,
-                    }
+                    },
+                    sort_keys=True,
+                    indent=4,
                 )
             )
         else:
@@ -79,7 +81,11 @@ class Fingerprint(object):
             new_json["deps"] = deps
             new_json["sources"] = sources
             new_json["variables"] = variables
-            self._build.fingerprint_path.write_text(json.dumps(new_json))
+            self._build.fingerprint_path.write_text(json.dumps(
+                new_json,
+                sort_keys=True,
+                indent=4,
+            ))
 
 
 class FileChange(object):
@@ -89,18 +95,6 @@ class FileChange(object):
 
     def trigger(self):
         return self._source.changed()
-
-
-class FilesChanged(object):
-    def __init__(self, build, paths):
-        self._build = build
-        self._paths = paths
-
-    def file_json(self):
-        return json.loads(Path(self._build.fingerprint_path).text())
-
-    def trigger(self):
-        return True
 
 
 class Source(object):
