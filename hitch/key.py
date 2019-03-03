@@ -216,7 +216,7 @@ def hitch(*args):
     hitch_maintenance(*args)
 
 
-def rerun(version="3.5.0"):
+def rerun(version="3.7.0"):
     """
     Rerun last example code block with specified version of python.
     """
