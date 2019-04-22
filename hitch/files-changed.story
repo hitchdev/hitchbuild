@@ -1,6 +1,6 @@
 File changed:
   based on: HitchBuild
-  description: |
+  about: |
     For many builds (e.g. database, virtualenv), you will want
     to leave it be if it exists unless one or more source files have
     changed since the build was last run.
@@ -20,9 +20,10 @@ File changed:
               self._build_dir = Path(build_dir).abspath()
               self.fingerprint_path = self._build_dir / "fingerprint.txt"
               self.trigger(self.nonexistent(self._build_dir / "fingerprint.txt"))
-              self._reqs = self.source("reqs", self._src_dir / "requirements.txt")
-              self.trigger(self.on_change(self._reqs), self.installreqs)
-
+              self.trigger(
+                  self.on_change("reqs", [self._src_dir / "requirements.txt"]),
+                  self.installreqs
+              )
 
           def log(self, message):
               self._build_dir.joinpath("..", "log.txt").write_text(message + '\n', append=True)

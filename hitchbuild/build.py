@@ -1,6 +1,22 @@
+from os.path import getmtime
 from path import Path
 import uuid
 import json
+
+
+class BuildContextManager(object):
+    def __init__(self, build):
+        self._build = build
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        if hasattr(self._build, "_sources"):
+            for source in self._build._sources:
+                source.timestamp()
+        if value is None:
+            self._build.fingerprint.new()
 
 
 class Dependency(object):
@@ -57,10 +73,8 @@ class Fingerprint(object):
                 if isinstance(trigger, VarsChange):
                     for name, value in trigger.variables.items():
                         variables[name] = value
-
-        if hasattr(self._build, "_sources"):
-            for source in self._build._sources:
-                sources[source.name] = source.timestamp()
+                if isinstance(trigger, FileChange):
+                    sources[trigger._name] = trigger.timestamps()
 
         if not self.exists():
             self._build.fingerprint_path.write_text(
@@ -89,12 +103,31 @@ class Fingerprint(object):
 
 
 class FileChange(object):
-    def __init__(self, build, source):
+    def __init__(self, build, name, source):
         self._build = build
+        self._name = name
         self._source = source
 
+    def timestamps(self):
+        ts = {}
+        for path in self._source:
+            ts[path] = getmtime(path)
+        return ts
+
     def trigger(self):
-        return self._source.changed()
+        json = (
+            self._build.fingerprint.file_json()
+            if self._build.fingerprint.exists()
+            else {}
+        )
+        paths = json.get("sources", {}).get(self._name, {})
+
+        # TODO : check path lists are equivalent
+
+        for path in self._source:
+            if paths.get(path) != getmtime(path):
+                return True
+        return False
 
 
 class Source(object):
@@ -202,26 +235,13 @@ class HitchBuild(object):
     def as_dependency(self, build):
         return Dependency(self, build)
 
-    def on_change(self, source):
-        return FileChange(self, source)
+    def on_change(self, name, source):
+        return FileChange(self, name, source)
 
     def vars_changed(self, **variables):
         return VarsChange(self, variables)
 
     def ensure_built(self):
-        class BuildContextManager(object):
-            def __init__(self, build):
-                self._build = build
-
-            def __enter__(self):
-                pass
-
-            def __exit__(self, type, value, traceback):
-                if hasattr(self._build, "_sources"):
-                    for source in self._build._sources:
-                        source.timestamp()
-                if value is None:
-                    self._build.fingerprint.new()
 
         if hasattr(self, "_triggers"):
             methods = []
