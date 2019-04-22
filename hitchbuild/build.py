@@ -130,40 +130,6 @@ class FileChange(object):
         return False
 
 
-class Source(object):
-    def __init__(self, build, name, paths):
-        self._build = build
-        self._name = name
-        self._paths = paths
-
-    @property
-    def name(self):
-        return self._name
-
-    def changed(self):
-        from os.path import getmtime
-
-        json = (
-            self._build.fingerprint.file_json()
-            if self._build.fingerprint.exists()
-            else {}
-        )
-        paths = json.get("sources", {}).get(self._name, {})
-
-        for path in self._paths:
-            if paths.get(path) != getmtime(path):
-                return True
-        return False
-
-    def timestamp(self):
-        from os.path import getmtime
-
-        paths = {}
-        for path in self._paths:
-            paths[path] = getmtime(path)
-        return paths
-
-
 class VarsChange(object):
     def __init__(self, build, variables):
         self._build = build
@@ -208,15 +174,6 @@ class HitchBuild(object):
 
     def dependency(self, build):
         return Dependency(build, self)
-
-    def source(self, name, *paths):
-        if not hasattr(self, "_sources"):
-            self._sources = []
-
-        new_source = Source(self, name, paths)
-        self._sources.append(new_source)
-
-        return new_source
 
     def trigger(self, trigger_object, method=None):
         if not hasattr(self, "_triggers"):
