@@ -12,11 +12,8 @@ class BuildContextManager(object):
         pass
 
     def __exit__(self, type, value, traceback):
-        if hasattr(self._build, "_sources"):
-            for source in self._build._sources:
-                source.timestamp()
         if value is None:
-            self._build.fingerprint.new()
+            self._build.fingerprint.save()
 
 
 class Dependency(object):
@@ -61,7 +58,7 @@ class Fingerprint(object):
     def deps(self):
         return self.file_json()["deps"] if self.exists() else {}
 
-    def new(self):
+    def save(self):
         deps = {}
         sources = {}
         variables = {}
