@@ -23,15 +23,17 @@ Dependency:
               self.fingerprint_path = self.build_path / "fingerprint.txt"
               self.thingfile = self.build_path / "cpython.txt"
               self.logfile = self.build_path / "log.txt"
-              self.trigger(self.nonexistent(self.build_path))
 
           def build(self):
-              if not self.build_path.exists():
+              if not self.fingerprint_path.exists():
+                  if self.build_path.exists():
+                      self.build_path.rmtree()
                   self.build_path.mkdir()
-              self.thingfile.write_text(
-                  str(random.randrange(10**6, 10**7))
-              )
-              self.logfile.write_text("cpython built\n", append=True)
+                  self.thingfile.write_text(
+                      str(random.randrange(10**6, 10**7))
+                  )
+                  self.logfile.write_text("cpython built\n", append=True)
+                  self.new_fingerprint()
 
           def clean(self):
               if self.build_path.exists():
@@ -44,16 +46,17 @@ Dependency:
               self.fingerprint_path = self.build_path / "fingerprint.txt"
               self.logfile = self.build_path / "log.txt"
               self.thingfile = self.build_path / "virtualenv.txt"
-              self.cpython = cpython
-              self.trigger(self.dependency(cpython))
-              self.trigger(self.nonexistent(self.build_path))
+              self.cpython = self.dependency(cpython)
 
           def build(self):
-              if not self.build_path.exists():
+              if not self.fingerprint_path.exists() or self.cpython.rebuilt:
+                  if self.build_path.exists():
+                      self.build_path.rmtree()
                   self.build_path.mkdir()
-              self.cpython.ensure_built()
-              self.thingfile.write_text("text\n", append=True)
-              self.logfile.write_text("virtualenv built\n", append=True)
+                  self.cpython.ensure_built()
+                  self.thingfile.write_text("text\n", append=True)
+                  self.logfile.write_text("virtualenv built\n", append=True)
+                  self.new_fingerprint()
 
           def clean(self):
               self.build_path.rmtree()

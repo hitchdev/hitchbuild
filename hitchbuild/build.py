@@ -70,8 +70,14 @@ class Fingerprint(object):
                 if isinstance(trigger, VarsChange):
                     for name, value in trigger.variables.items():
                         variables[name] = value
+                """
                 if isinstance(trigger, FileChange):
                     sources[trigger._name] = trigger.timestamps()
+                """
+
+        if hasattr(self._build, "_sources"):
+            for source in self._build._sources:
+                sources[source.name] = source.timestamps()
 
         if not self.exists():
             self._build.fingerprint_path.write_text(
@@ -100,30 +106,28 @@ class Fingerprint(object):
 
 
 class FileChange(object):
-    def __init__(self, build, name, source):
+    def __init__(self, build, name, filenames):
+        self.name = name
         self._build = build
-        self._name = name
-        self._source = source
+        self._filenames = filenames
 
     def timestamps(self):
         ts = {}
-        for path in self._source:
+        for path in self._filenames:
             ts[path] = getmtime(path)
         return ts
 
-    def trigger(self):
-        json = (
-            self._build.fingerprint.file_json()
-            if self._build.fingerprint.exists()
-            else {}
-        )
-        paths = json.get("sources", {}).get(self._name, {})
+    @property
+    def changed(self):
+        previous_files = self._build.fingerprint.file_json()['sources'].get(self.name)
 
-        # TODO : check path lists are equivalent
+        if len(set(previous_files.keys()).symmetric_difference(set(previous_files))) != 0:
+            return True
 
-        for path in self._source:
-            if paths.get(path) != getmtime(path):
+        for path, mtime in previous_files.items():
+            if getmtime(path) != mtime:
                 return True
+
         return False
 
 
@@ -189,23 +193,25 @@ class HitchBuild(object):
     def as_dependency(self, build):
         return Dependency(self, build)
 
-    def on_change(self, name, source):
-        return FileChange(self, name, source)
+    def source(self, name, filenames):
+        filechange = FileChange(self, name, filenames)
+        if not hasattr(self, '_sources'):
+            self._sources = []
+        self._sources.append(filechange)
+        return filechange
 
     def vars_changed(self, **variables):
         return VarsChange(self, variables)
 
     def ensure_built(self):
-
         if hasattr(self, "_triggers"):
             methods = []
             for trigger, method in self._triggers:
                 if trigger.trigger():
                     if method not in methods:
                         methods.append(method)
-            for method in methods:
-                with BuildContextManager(self):
-                    method()
+        with BuildContextManager(self):
+            self.build()
 
     def __repr__(self):
         return """HitchBuild("{0}")""".format(self.name)

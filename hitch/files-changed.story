@@ -7,7 +7,7 @@ File changed:
   given:
     files:
       requirements.txt: |
-        file that, if changed, should trigger a rebuild
+        file that, if changed, should trigger a reinstallation of requirements.
     setup: |
       from pathquery import pathquery
       from path import Path
@@ -19,11 +19,7 @@ File changed:
               self._src_dir = Path(src_dir).abspath()
               self._build_dir = Path(build_dir).abspath()
               self.fingerprint_path = self._build_dir / "fingerprint.txt"
-              self.trigger(self.nonexistent(self._build_dir / "fingerprint.txt"))
-              self.trigger(
-                  self.on_change("reqs", [self._src_dir / "requirements.txt"]),
-                  self.installreqs
-              )
+              self.reqs = self.source("reqs", [self._src_dir / "requirements.txt"])
 
           def log(self, message):
               self._build_dir.joinpath("..", "log.txt").write_text(message + '\n', append=True)
@@ -32,10 +28,15 @@ File changed:
               self.log("pip install -r requirements.txt")
 
           def build(self):
-              if self._build_dir.exists():
-                  self._build_dir.rmtree()
-              self._build_dir.mkdir()
-              self.log("create virtualenv")
+              if not self.fingerprint_path.exists():
+                  if self._build_dir.exists():
+                      self._build_dir.rmtree()
+                  self._build_dir.mkdir()
+                  self.log("create virtualenv")
+                  self.installreqs()
+              else:
+                  if self.reqs.changed:
+                      self.installreqs()
 
       virtualenv = Virtualenv(src_dir=".", build_dir="package")
   steps:
