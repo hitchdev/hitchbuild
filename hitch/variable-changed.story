@@ -7,7 +7,7 @@ Variable changed:
     Some examples:
 
     - Building python virtualenv with a list of packages (variable).
-    - A version for the build itself (trigger a rebuild if the code has changed).
+    - A version for the build itself (trigger a rebuild if the build code has changed).
 
     HitchBuild will hash any variable it is passed to determine if it
     has changed. Any of the following types or a combination can be used -
@@ -30,13 +30,8 @@ Variable changed:
           def __init__(self, src_dir, build_dir, extra_packages):
               self._src_dir = Path(src_dir)
               self._build_dir = Path(build_dir).abspath()
-              self._extra_packages = extra_packages
+              self._extra_packages = self.variable("extra_packages", extra_packages)
               self.fingerprint_path = self._build_dir / "fingerprint.txt"
-              self.trigger(self.nonexistent(self.fingerprint_path))
-              self.trigger(
-                  self.vars_changed(extra_packages=extra_packages),
-                  self.pipinstall
-              )
 
           def log(self, message):
               self._build_dir.joinpath("..", "log.txt").write_text(message + '\n', append=True)
@@ -46,13 +41,18 @@ Variable changed:
               return self._build_dir / "thing.txt"
 
           def pipinstall(self):
-              for package in self._extra_packages:
+              for package in self._extra_packages.value:
                   self.log("pip install {}".format(package))
 
           def build(self):
-              self.clean()
-              self._build_dir.mkdir()
-              self.thingpath.write_text("create virtualenv", append=True)
+              if self.incomplete():
+                  self.clean()
+                  self._build_dir.mkdir()
+                  self.thingpath.write_text("create virtualenv", append=True)
+
+              if self.incomplete() or self._extra_packages.changed:
+                  self.pipinstall()
+                  self.refingerprint()
 
           def clean(self):
               if self._build_dir.exists():

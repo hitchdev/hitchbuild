@@ -16,6 +16,20 @@ class BuildContextManager(object):
             self._build.fingerprint.save()
 
 
+class Variable(object):
+    def __init__(self, name, value, build):
+        self._build = build
+        self.name = name
+        self.value = value
+
+    @property
+    def changed(self):
+        expected_value = self._build.fingerprint.variables.get(self.name)
+        if expected_value is None or self.value is None:
+            return True
+        return expected_value != self.value
+
+
 class Dependency(object):
     def __init__(self, parent, child):
         self._parent = parent
@@ -59,6 +73,10 @@ class Fingerprint(object):
     def deps(self):
         return self.file_json()["deps"] if self.exists() else {}
 
+    @property
+    def variables(self):
+        return self.file_json()["variables"] if self.exists() else {}
+
     def save(self):
         deps = {}
         sources = {}
@@ -68,15 +86,9 @@ class Fingerprint(object):
             for dependency in self._build._dependencies:
                 deps[dependency._parent.name] = dependency._parent.fingerprint.get()
 
-        if hasattr(self._build, "_triggers"):
-            for trigger, _ in self._build._triggers:
-                if isinstance(trigger, VarsChange):
-                    for name, value in trigger.variables.items():
-                        variables[name] = value
-                """
-                if isinstance(trigger, FileChange):
-                    sources[trigger._name] = trigger.timestamps()
-                """
+        if hasattr(self._build, "_variables"):
+            for var in self._build._variables:
+                variables[var.name] = var.value
 
         if hasattr(self._build, "_sources"):
             for source in self._build._sources:
@@ -218,6 +230,14 @@ class HitchBuild(object):
             self._sources = []
         self._sources.append(filechange)
         return filechange
+
+    def variable(self, name, var):
+        # TODO : Use a property name that is a bit less generic than _variables.
+        if not hasattr(self, '_variables'):
+            self._variables = []
+        var_obj = Variable(name, var, self)
+        self._variables.append(var_obj)
+        return var_obj
 
     def vars_changed(self, **variables):
         return VarsChange(self, variables)
