@@ -25,7 +25,7 @@ Dependency:
               self.logfile = self.build_path / "log.txt"
 
           def build(self):
-              if not self.fingerprint_path.exists():
+              if self.incomplete():
                   if self.build_path.exists():
                       self.build_path.rmtree()
                   self.build_path.mkdir()
@@ -33,7 +33,7 @@ Dependency:
                       str(random.randrange(10**6, 10**7))
                   )
                   self.logfile.write_text("cpython built\n", append=True)
-                  self.new_fingerprint()
+                  self.refingerprint()
 
           def clean(self):
               if self.build_path.exists():
@@ -44,26 +44,28 @@ Dependency:
           def __init__(self, build_path, cpython):
               self.build_path = Path(build_path)
               self.fingerprint_path = self.build_path / "fingerprint.txt"
-              self.logfile = self.build_path / "log.txt"
+              self.logfile = self.build_path.parent / "virtualenv_log.txt"
               self.thingfile = self.build_path / "virtualenv.txt"
               self.cpython = self.dependency(cpython)
 
           def build(self):
-              if not self.fingerprint_path.exists() or self.cpython.rebuilt:
+              if self.incomplete() or self.cpython.rebuilt:
                   if self.build_path.exists():
                       self.build_path.rmtree()
                   self.build_path.mkdir()
-                  self.cpython.ensure_built()
+                  self.cpython.build.ensure_built()
                   self.thingfile.write_text("text\n", append=True)
                   self.logfile.write_text("virtualenv built\n", append=True)
-                  self.new_fingerprint()
+                  self.refingerprint()
 
           def clean(self):
               self.build_path.rmtree()
 
+      cpython = CPython("./python2.7.3")
+
       virtualenv = Virtualenv(
           "./venv",
-          cpython=CPython("./python2.7.3")
+          cpython=cpython,
       )
 
 
@@ -76,7 +78,7 @@ Dependency built:
       virtualenv.ensure_built()
 
   - File contents will be:
-      filename: venv/log.txt
+      filename: virtualenv_log.txt
       text: |
         virtualenv built
 
@@ -84,11 +86,11 @@ Dependency built:
     When dependency is rebuilt rebuild children:
       steps:
       - Run code: |
-          virtualenv.cpython.clean()
+          cpython.clean()
           virtualenv.ensure_built()
 
       - File contents will be:
-          filename: venv/log.txt
+          filename: virtualenv_log.txt
           text: |
             virtualenv built
             virtualenv built

@@ -25,7 +25,8 @@ class Dependency(object):
     def build(self):
         return self._parent
 
-    def trigger(self):
+    @property
+    def rebuilt(self):
         expected_fingerprint = self._child.fingerprint.deps.get(self._parent.name)
         actual_fingerprint = self._parent.fingerprint.get()
         if expected_fingerprint is None or actual_fingerprint is None:
@@ -63,10 +64,12 @@ class Fingerprint(object):
         sources = {}
         variables = {}
 
+        if hasattr(self._build, "_dependencies"):
+            for dependency in self._build._dependencies:
+                deps[dependency._parent.name] = dependency._parent.fingerprint.get()
+
         if hasattr(self._build, "_triggers"):
             for trigger, _ in self._build._triggers:
-                if isinstance(trigger, Dependency):
-                    deps[trigger._parent.name] = trigger._parent.fingerprint.get()
                 if isinstance(trigger, VarsChange):
                     for name, value in trigger.variables.items():
                         variables[name] = value
@@ -163,6 +166,12 @@ class HitchBuild(object):
     def build(self):
         raise NotImplementedError("build method must be implemented")
 
+    def incomplete(self):
+        """
+        True if no successful build exists.
+        """
+        return not self.fingerprint_path.exists()
+
     @property
     def fingerprint(self):
         assert hasattr(
@@ -170,11 +179,21 @@ class HitchBuild(object):
         ), "fingerprint_path on object should be set"
         return Fingerprint(self)
 
+    def refingerprint(self):
+        """
+        Rebuild the fingerprint file.
+        """
+        self.fingerprint.save()
+
     def nonexistent(self, path):
         return NonExistent(path)
 
     def dependency(self, build):
-        return Dependency(build, self)
+        if not hasattr(self, '_dependencies'):
+            self._dependencies = []
+        dep = Dependency(build, self)
+        self._dependencies.append(dep)
+        return dep
 
     def trigger(self, trigger_object, method=None):
         if not hasattr(self, "_triggers"):
@@ -204,12 +223,6 @@ class HitchBuild(object):
         return VarsChange(self, variables)
 
     def ensure_built(self):
-        if hasattr(self, "_triggers"):
-            methods = []
-            for trigger, method in self._triggers:
-                if trigger.trigger():
-                    if method not in methods:
-                        methods.append(method)
         with BuildContextManager(self):
             self.build()
 
