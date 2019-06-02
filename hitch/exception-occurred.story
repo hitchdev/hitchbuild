@@ -14,16 +14,16 @@ Exception occurred during build:
       class Thing(hitchbuild.HitchBuild):
           def __init__(self, build_path):
               self._build_path = Path(build_path).abspath()
-              self.trigger(self.nonexistent(self._build_path / "fingerprint.txt"))
               self.fingerprint_path = self._build_path / "fingerprint.txt"
 
           def build(self):
-              if self._build_path.exists():
-                  self._build_path.rmtree()
-              self._build_path.mkdir()
-              self._build_path.joinpath("..", "thing.txt").write_text("building\n", append=True)
-
-              raise Exception("build had an error")
+              if self.incomplete():
+                  if self._build_path.exists():
+                      self._build_path.rmtree()
+                  self._build_path.mkdir()
+                  self._build_path.joinpath("..", "thing.txt").write_text("building\n", append=True)
+                  raise Exception("build had an error")
+                  self.refingerprint()
   steps:
   - Run code:
       code: |
