@@ -18,7 +18,6 @@ Quickstart:
           def __init__(self, build_dir):
               self._build_dir = Path(build_dir).abspath()
               self.fingerprint_path = self._build_dir / "fingerprint.txt"
-              self.trigger(self.nonexistent(self.thing))
 
           @property
           def thing(self):
