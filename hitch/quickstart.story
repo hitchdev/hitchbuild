@@ -24,9 +24,10 @@ Quickstart:
               return self._build_dir / "thing.txt"
 
           def build(self):
-              self.clean()
-              self._build_dir.mkdir()
-              self.thing.write_text("text")
+              if self.incomplete():
+                  self.clean()
+                  self._build_dir.mkdir()
+                  self.thing.write_text("text")
 
           def clean(self):
               if self._build_dir.exists():

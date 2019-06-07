@@ -28,7 +28,7 @@ File changed:
               self.log("pip install -r requirements.txt")
 
           def build(self):
-              if not self.fingerprint_path.exists():
+              if self.incomplete():
                   if self._build_dir.exists():
                       self._build_dir.rmtree()
                   self._build_dir.mkdir()
