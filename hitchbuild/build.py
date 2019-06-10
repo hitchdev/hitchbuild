@@ -4,6 +4,18 @@ import uuid
 import json
 
 
+class BuildContextManager(object):
+    def __init__(self, build):
+        self._build = build
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        if value is None:
+            self._build.fingerprint.save()
+
+
 class Variable(object):
     def __init__(self, name, value, build):
         self._build = build
@@ -235,7 +247,8 @@ class HitchBuild(object):
         return VarsChange(self, variables)
 
     def ensure_built(self):
-        self.build()
+        with BuildContextManager(self):
+            self.build()
 
     def __repr__(self):
         return """HitchBuild("{0}")""".format(self.name)

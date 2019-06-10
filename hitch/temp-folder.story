@@ -12,6 +12,9 @@ Temp folder:
       import hitchbuild
 
       class TempDirectoryUser(hitchbuild.HitchBuild):
+          def __init__(self):
+              self.fingerprint_path = self.tmp / "fingerprint.txt"
+
           def build(self):
               print(self.tmp)
 
