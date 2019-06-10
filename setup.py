@@ -15,7 +15,8 @@ def read(*parts):
 setup(name="hitchbuild",
     version=read('VERSION').replace('\n', ''),
     description="Building blocks for a build system.",
-    long_description=read('README.rst'),
+    long_description=read('README.md'),
+    long_description_content_type="text/markdown",
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
