@@ -19,10 +19,10 @@ Dependency:
 
       class CPython(hitchbuild.HitchBuild):
           def __init__(self, build_path):
-              self.build_path = Path(build_path)
+              self.build_path = Path(build_path).abspath()
               self.fingerprint_path = self.build_path / "fingerprint.txt"
               self.thingfile = self.build_path / "cpython.txt"
-              self.logfile = self.build_path / "log.txt"
+              self.logfile = self.build_path / ".." / "log.txt"
 
           def build(self):
               if self.incomplete():
@@ -42,9 +42,9 @@ Dependency:
 
       class Virtualenv(hitchbuild.HitchBuild):
           def __init__(self, build_path, cpython):
-              self.build_path = Path(build_path)
+              self.build_path = Path(build_path).abspath()
               self.fingerprint_path = self.build_path / "fingerprint.txt"
-              self.logfile = self.build_path.parent / "virtualenv_log.txt"
+              self.logfile = self.build_path / ".." / "log.txt"
               self.thingfile = self.build_path / "virtualenv.txt"
               self.cpython = self.dependency(cpython)
 
@@ -78,8 +78,9 @@ Dependency built:
       virtualenv.ensure_built()
 
   - File contents will be:
-      filename: virtualenv_log.txt
+      filename: log.txt
       text: |
+        cpython built
         virtualenv built
 
   variations:
@@ -90,7 +91,9 @@ Dependency built:
           virtualenv.ensure_built()
 
       - File contents will be:
-          filename: virtualenv_log.txt
+          filename: log.txt
           text: |
+            cpython built
             virtualenv built
+            cpython built
             virtualenv built

@@ -1,7 +1,7 @@
 Temp folder:
   about: |
-    Temporary folders are useful to do 
-    By default, self.tmp is a Path object refering to /tmp folder.
+    Temporary folder is
+    By default, self.tmp is a Path.py object refering to /tmp folder.
 
     * If environment variable $TMP_FOLDER is set it will use that.
     * Unless, .with_tmp_folder(folder_path) is used, in which case that will be used instead.
@@ -16,7 +16,7 @@ Temp folder:
               self.fingerprint_path = self.tmp / "fingerprint.txt"
 
           def build(self):
-              print(self.tmp)
+              print(self.tmp / "mytempfile.txt")
 
       temp_directory_user = TempDirectoryUser()
   variations:
@@ -24,4 +24,12 @@ Temp folder:
       steps:
       - Run code:
           code: temp_directory_user.ensure_built()
-          will output: /tmp
+          will output: /tmp/mytempfile.txt
+
+    With environment variable:
+      steps:
+      - Run code:
+          code: temp_directory_user.ensure_built()
+          environment vars:
+            TMP_FOLDER: /tmp/othertemp
+          will output: /tmp/mytempfile.txt

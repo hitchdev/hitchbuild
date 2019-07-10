@@ -29,17 +29,12 @@ class Engine(BaseEngine):
         self.settings = settings
 
     def set_up(self):
+        self.path.build_directory = self.path.gen / "build"
         self.path.state = self.path.gen.joinpath("state")
 
         if self.path.state.exists():
-            self.path.state.rmtree(ignore_errors=True)
+            self.path.state.rmtree()
         self.path.state.mkdir()
-
-        for filename, contents in self.given.files.items():
-            filepath = self.path.state.joinpath(filename)
-            if not filepath.dirname().exists():
-                filepath.dirname().makedirs()
-            filepath.write_text(contents)
 
         if self.given.build_py is not None:
             self.path.state.joinpath("build.py").write_text(
@@ -65,9 +60,11 @@ class Engine(BaseEngine):
                 self.pip("uninstall", "hitchbuild", "-y").ignore_errors().run()
                 self.pip("install", ".").in_dir(self.path.project).run()
 
-        self.example_py_code = ExamplePythonCode(self.python, self.path.state)\
-            .with_setup_code(self.given.setup)\
-            .with_terminal_size(160, 100)
+        for filename, contents in self.given.files.items():
+            filepath = self.path.state.joinpath(filename)
+            if not filepath.dirname().exists():
+                filepath.dirname().makedirs()
+            filepath.write_text(contents)
 
     def _story_friendly_output(self, output):
         """
@@ -81,15 +78,19 @@ class Engine(BaseEngine):
     @validate(
         code=Str(),
         will_output=Str(),
+        environment_vars=MapPattern(Str(), Str()),
         raises=Map({
             Optional("type"): Str(),
             Optional("message"): Str(),
         })
     )
-    def run_code(self, code, will_output=None, raises=None):
-        self.example_py_code = ExamplePythonCode(self.python, self.path.state)\
+    def run_code(self, code, will_output=None, environment_vars=None, raises=None):
+        self.example_py_code = ExamplePythonCode(self.python, self.path.gen)\
             .with_terminal_size(160, 100)\
-            .with_setup_code(self.given.setup)
+            .with_env(**{} if environment_vars is None else environment_vars)\
+            .with_setup_code(self.given.setup)\
+            .in_dir(self.path.state)
+
         to_run = self.example_py_code.with_code(code)
 
         if self.settings.get("cprofile"):
@@ -115,7 +116,6 @@ class Engine(BaseEngine):
             message = raises.get('message')
 
             try:
-                result = self.example_py_code.expect_exceptions().run()
                 result.exception_was_raised(exception_type)
                 exception_message = self._story_friendly_output(result.exception.message)
                 Templex(exception_message).assert_match(message)
@@ -130,7 +130,7 @@ class Engine(BaseEngine):
     def exception_raised_with(self, code, exception_type, message):
         result = ExamplePythonCode(code).with_setup_code(self.given.setup)\
                                         .expect_exceptions()\
-                                        .run(self.path.state, self.python)
+                                        .run(self.path.gen, self.python)
         result.exception_was_raised(exception_type, message)
 
     def touch_file(self, filename):
@@ -164,7 +164,7 @@ class Engine(BaseEngine):
                 raise
 
     def file_does_not_exist(self, filename):
-        return not self.path.state.joinpath(filename).exists()
+        return not self.path.build_directory.joinpath(filename).exists()
 
     @validate(seconds=Int())
     def sleep(self, seconds):
@@ -216,13 +216,13 @@ def hitch(*args):
     hitch_maintenance(*args)
 
 
-def rerun(version="3.7.0"):
+def rerun(version="3.5.0"):
     """
     Rerun last example code block with specified version of python.
     """
     Command(DIR.gen.joinpath("py{0}".format(version), "bin", "python"))(
-        DIR.gen.joinpath("state", "examplepythoncode.py")
-    ).in_dir(DIR.gen.joinpath("state")).run()
+        DIR.gen.joinpath("working", "working", "examplepythoncode.py")
+    ).in_dir(DIR.gen.joinpath("working")).run()
 
 
 def lint():

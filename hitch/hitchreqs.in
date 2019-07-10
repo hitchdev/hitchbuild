@@ -1,9 +1,10 @@
 hitchstory>=0.9.1
 hitchrun
-hitchrunpy>=0.6.0
+hitchrunpy>=0.9.0
 hitchpython
 flake8
 jupyter_console
 simex
 twine
 templex
+
