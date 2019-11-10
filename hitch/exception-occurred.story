@@ -1,6 +1,6 @@
 Exception occurred during build:
   based on: HitchBuild
-  description: |
+  about: |
     If an exception occurs during a build, it is presumed that
     it needs to be run again, no matter what.
   given:

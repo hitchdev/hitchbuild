@@ -1,6 +1,6 @@
 Variable changed:
   based on: HitchBuild
-  description: |
+  about: |
     Using HitchBuild you can feed an arbitrary variable into the
     build system and use it to determine whether or not to rebuild.
 

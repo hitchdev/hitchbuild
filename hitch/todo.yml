@@ -1,2 +1,3 @@
+- _variables is a terrible name
 - If ctrl-c halfway through build, rebuild from scratch.
 - "Unable to open database file" if build directory does not exist.

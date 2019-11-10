@@ -1,15 +1,14 @@
 from hitchstory import StoryCollection, BaseEngine, exceptions
-from hitchstory import GivenDefinition, GivenProperty, InfoDefinition, InfoProperty
+from hitchstory import GivenDefinition, GivenProperty
 from hitchstory import validate, no_stacktrace_for
 from hitchrun import hitch_maintenance, expected, DIR
-from pathquery import pathq
+from pathquery import pathquery
 from strictyaml import MapPattern, Optional, Map, Str, Int
 from commandlib import python, Command
-import hitchpython
 import strictyaml
-import hitchtest
 from hitchrunpy import ExamplePythonCode, HitchRunPyException
 from templex import Templex
+import hitchpylibrarytoolkit
 
 
 class Engine(BaseEngine):
@@ -18,10 +17,6 @@ class Engine(BaseEngine):
         build_py=GivenProperty(Str()),
         setup=GivenProperty(Str()),
         files=GivenProperty(MapPattern(Str(), Str())),
-    )
-
-    info_definition = InfoDefinition(
-        about=InfoProperty(),
     )
 
     def __init__(self, paths, settings):
@@ -36,31 +31,20 @@ class Engine(BaseEngine):
             self.path.state.rmtree()
         self.path.state.mkdir()
 
-        if self.given.build_py is not None:
+        if self.given.get('build.py') is not None:
             self.path.state.joinpath("build.py").write_text(
-                self.given.build_py
+                self.given['build.py']
             )
 
         self.path.key.joinpath("code_that_does_things.py").copy(self.path.state)
 
-        self.python_package = hitchpython.PythonPackage(self.given.python_version)
-        self.python_package.build()
+        self.python = hitchpylibrarytoolkit.project_build(
+            "hitchbuild",
+            self.path,
+            self.given["python version"],
+        ).bin.python
 
-        self.pip = self.python_package.cmd.pip
-        self.python = self.python_package.cmd.python
-
-        with hitchtest.monitor([self.path.key.joinpath("debugrequirements.txt")]) as changed:
-            if changed:
-                self.pip("install", "-r", "debugrequirements.txt").in_dir(self.path.key).run()
-
-        with hitchtest.monitor(
-            pathq(self.path.project.joinpath("hitchbuild")).ext("py")
-        ) as changed:
-            if changed:
-                self.pip("uninstall", "hitchbuild", "-y").ignore_errors().run()
-                self.pip("install", ".").in_dir(self.path.project).run()
-
-        for filename, contents in self.given.files.items():
+        for filename, contents in self.given.get('files', {}).items():
             filepath = self.path.state.joinpath(filename)
             if not filepath.dirname().exists():
                 filepath.dirname().makedirs()
@@ -88,7 +72,7 @@ class Engine(BaseEngine):
         self.example_py_code = ExamplePythonCode(self.python, self.path.gen)\
             .with_terminal_size(160, 100)\
             .with_env(**{} if environment_vars is None else environment_vars)\
-            .with_setup_code(self.given.setup)\
+            .with_setup_code(self.given['setup'])\
             .in_dir(self.path.state)
 
         to_run = self.example_py_code.with_code(code)
@@ -182,7 +166,7 @@ def bdd(*keywords):
     Run story matching keywords specified.
     """
     StoryCollection(
-        pathq(DIR.key).ext("story"),
+        pathquery(DIR.key).ext("story"),
         Engine(DIR, {"overwrite artefacts": False})
     ).shortcut(*keywords).play()
 
@@ -194,7 +178,7 @@ def rbdd(*keywords):
     Run story matching keywords specified.
     """
     StoryCollection(
-        pathq(DIR.key).ext("story"),
+        pathquery(DIR.key).ext("story"),
         Engine(DIR, {"overwrite artefacts": True})
     ).shortcut(*keywords).play()
 
@@ -205,7 +189,7 @@ def regression():
     """
     lint()
     StoryCollection(
-        pathq(DIR.key).ext("story"), Engine(DIR, {})
+        pathquery(DIR.key).ext("story"), Engine(DIR, {})
     ).ordered_by_name().play()
 
 
