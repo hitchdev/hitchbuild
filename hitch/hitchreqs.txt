@@ -18,8 +18,8 @@ gitdb2==2.0.6             # via gitpython
 gitpython==3.0.4          # via hitchpylibrarytoolkit
 hitchbuild==0.4.0         # via dirtemplate, hitchbuildpy
 hitchbuildpy==0.4.6       # via hitchpylibrarytoolkit
-hitchpylibrarytoolkit==0.3.1
-hitchrun==0.3.2
+hitchpylibrarytoolkit==0.3.1  # via -r hitchreqs.in
+hitchrun==0.3.2           # via -r hitchreqs.in
 hitchrunpy==0.10.0        # via hitchpylibrarytoolkit
 hitchstory==0.12.1        # via hitchpylibrarytoolkit
 icommandlib==0.5.0        # via hitchrunpy
@@ -58,7 +58,6 @@ readme-renderer==24.0     # via twine
 regex==2019.11.1          # via black
 requests-toolbelt==0.9.1  # via twine
 requests==2.22.0          # via requests-toolbelt, twine
-ruamel.yaml.clib==0.2.0   # via ruamel.yaml
 ruamel.yaml==0.16.5       # via strictyaml
 six==1.13.0               # via bleach, pip-tools, prompt-toolkit, python-dateutil, readme-renderer, traitlets
 smmap2==2.0.5             # via gitdb2
@@ -77,5 +76,5 @@ webencodings==0.5.1       # via bleach
 zipp==0.6.0               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
-# pip==18.1                 # via hitchrun
-# setuptools==41.6.0        # via ipython, twine
+# pip
+# setuptools
