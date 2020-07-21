@@ -12,8 +12,7 @@ class BuildContextManager(object):
         pass
 
     def __exit__(self, type, value, traceback):
-        if value is None:
-            self._build.fingerprint.save()
+        pass
 
 
 class Variable(object):
