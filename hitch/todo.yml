@@ -2,3 +2,33 @@
 - _variables is a terrible name
 - If ctrl-c halfway through build, rebuild from scratch.
 - "Unable to open database file" if build directory does not exist.
+
+
+    
+    
+
+[5]: function 'build'
+  /home/colm/.hitch/3px8vh/hvenv/lib/python3.8/site-packages/hitchbuildpy/virtualenv.py
+
+    
+        54 :         else:
+        55 :             if self._requirementstxt is not None:
+    --> 56 :                 if self._requirementstxt.changed:
+        57 :                     for filename in self._requirementstxt._filenames:
+    
+    
+
+[6]: function 'changed'
+  /home/colm/.hitch/3px8vh/hvenv/lib/python3.8/site-packages/hitchbuild/build.py
+
+    
+        135 :         previous_files = self._build.fingerprint.file_json()['sources'].get(self.name)
+        136 : 
+    --> 137 :         if len(set(previous_files.keys()).symmetric_difference(set(previous_files))) != 0:
+        138 :             return True
+    
+    
+
+builtins.AttributeError
+  Attribute not found.
+'NoneType' object has no attribute 'keys'
