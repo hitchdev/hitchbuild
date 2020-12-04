@@ -135,7 +135,7 @@ class FileChange(object):
     def changed(self):
         previous_files = self._build.fingerprint.file_json()['sources'].get(self.name)
 
-        if len(set(previous_files.keys()).symmetric_difference(set(previous_files))) != 0:
+        if len(set(self._filenames).symmetric_difference(set(previous_files))) != 0:
             return True
 
         for path, mtime in previous_files.items():
